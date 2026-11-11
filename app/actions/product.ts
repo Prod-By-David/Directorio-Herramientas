@@ -7,32 +7,27 @@ import { createClient } from "@/db/supabase/server"
 
 export async function getFilters() {
   const db = createClient()
-  const { data: categoriesData, error: categoriesError } = await db
-    .from("products")
-    .select("categories")
+  
+  const [categoriesRes, labelsRes, tagsRes] = await Promise.all([
+    db.from("products").select("categories").eq("approved", true),
+    db.from("products").select("labels").eq("approved", true),
+    db.from("products").select("tags").eq("approved", true),
+  ])
 
-  const { data: labelsData, error: labelsError } = await db
-    .from("products")
-    .select("labels")
-
-  const { data: tagsData, error: tagsError } = await db
-    .from("products")
-    .select("tags")
-
-  if (categoriesError || labelsError || tagsError) {
+  if (categoriesRes.error || labelsRes.error || tagsRes.error) {
     console.error(
       "Error fetching filters:",
-      categoriesError,
-      labelsError,
-      tagsError
+      categoriesRes.error,
+      labelsRes.error,
+      tagsRes.error
     )
     return { categories: [], labels: [], tags: [] }
   }
 
   return {
-    categories: categoriesData.map((item) => item.categories).filter(Boolean),
-    labels: labelsData.map((item) => item.labels).filter(Boolean),
-    tags: tagsData.map((item) => item.tags).filter(Boolean),
+    categories: Array.from(new Set(categoriesRes.data.map((item) => item.categories).filter(Boolean))),
+    labels: Array.from(new Set(labelsRes.data.flatMap((item) => item.labels).filter(Boolean))),
+    tags: Array.from(new Set(tagsRes.data.flatMap((item) => item.tags).filter(Boolean))),
   }
 }
 
@@ -44,7 +39,12 @@ export const getProducts = cache(
     tag?: string
   ) => {
     const db = createClient()
-    let query = db.from("products").select("*")
+    let query = db
+      .from("products")
+      .select("*")
+      .eq("approved", true) // Seguridad: solo mostrar productos aprobados públicamente
+      .order("is_featured", { ascending: false }) // Comercial: Los de 99€ destacados van primero
+      .order("created_at", { ascending: false })
 
     if (searchTerm) {
       query = query.or(
@@ -75,19 +75,20 @@ export const getProducts = cache(
   }
 )
 
-export async function getProductById(id?: string) {
+export async function getProductById(id: string) {
   const supabase = createClient()
 
   const { data, error } = await supabase
     .from("products")
     .select("*")
     .eq("id", id)
+    .single() // Usamos single() para traer un solo objeto en lugar de un array
+
   if (error) {
-    console.error("Error fetching resources:", error)
-    return []
+    console.error("Error fetching product by ID:", error)
+    return null
   }
 
-  console.log(data)
   return data
 }
 
@@ -100,9 +101,25 @@ export async function incrementClickCount(id: string) {
 
   if (error) {
     console.error("Error incrementing click count:", error)
-  } else {
-    console.log("Click count incremented:", data)
   }
 
   revalidatePath("/products")
+}
+
+export async function getApprovedProducts() {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('approved', true) 
+    .order('is_featured', { ascending: false }) 
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error("Error fetching approved products:", error)
+    return []
+  }
+  
+  return data
 }

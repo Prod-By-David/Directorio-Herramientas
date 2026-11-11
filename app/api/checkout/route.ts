@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// Inicializamos Stripe con la clave secreta y la versión de la API por seguridad
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2026-10-28.endive' as any, // O la versión estándar que prefieras
+});
 
 export async function POST(req: Request) {
   try {
@@ -11,7 +14,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Falta el ID del producto' }, { status: 400 });
     }
 
-    const origin = req.headers.get('origin') || 'http://localhost:3000';
+    // Obtenemos el origen de forma segura (respaldado por headers o variable de entorno de producción)
+    const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -32,13 +36,14 @@ export async function POST(req: Request) {
       success_url: `${origin}/products?featured_success=true`,
       cancel_url: `${origin}/products?featured_canceled=true`,
       metadata: {
-        productId: String(productId), // Guardamos el ID para leerlo tras el pago
+        productId: String(productId), // Guardamos el ID para leerlo tras el pago en el Webhook
       },
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (error: any) {
-    console.error('Error en Stripe Checkout:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error interno desconocido';
+    console.error('Error en Stripe Checkout:', errorMessage);
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

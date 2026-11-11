@@ -3,7 +3,9 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2026-10-28.endive' as any,
+});
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 // Usamos la Service Role Key para saltar las políticas RLS y actualizar desde el servidor
@@ -14,7 +16,7 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: Request) {
   const body = await req.text();
-  const headersList = await headers();
+  const headersList = await headers(); // <- Corregido: async/await obligatorio en Next.js
   const signature = headersList.get('stripe-signature');
 
   if (!signature) {
@@ -25,9 +27,10 @@ export async function POST(req: Request) {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err: any) {
-    console.error('Error verificando firma del Webhook:', err.message);
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Error desconocido de firma';
+    console.error('Error verificando firma del Webhook:', errorMessage);
+    return NextResponse.json({ error: `Webhook Error: ${errorMessage}` }, { status: 400 });
   }
 
   // Cuando el pago en Stripe Checkout se completa con éxito
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
 
     if (productId) {
       const { error } = await supabaseAdmin
-        .from('products') // Asegúrate de que tu tabla se llama 'products'
+        .from('products')
         .update({ is_featured: true })
         .eq('id', productId);
 
