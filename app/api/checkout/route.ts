@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-// Inicializamos Stripe con la clave secreta y la versión de la API por seguridad
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-10-28.endive' as any, // O la versión estándar que prefieras
+  apiVersion: '2026-10-28.endive' as any,
 });
 
 export async function POST(req: Request) {
@@ -14,7 +13,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Falta el ID del producto' }, { status: 400 });
     }
 
-    // Obtenemos el origen de forma segura (respaldado por headers o variable de entorno de producción)
+    // Detecta dinámicamente el origen real de la web desde donde opera el usuario
     const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
     const session = await stripe.checkout.sessions.create({
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
               name: `Listado Destacado (Featured): ${productName || 'Herramienta'}`,
               description: 'Posicionamiento prioritario en la parte superior del directorio.',
             },
-            unit_amount: 9900, // 99.00 € (Stripe trabaja en céntimos)
+            unit_amount: 9900, // 99.00 €
           },
           quantity: 1,
         },
@@ -36,7 +35,7 @@ export async function POST(req: Request) {
       success_url: `${origin}/products?featured_success=true`,
       cancel_url: `${origin}/products?featured_canceled=true`,
       metadata: {
-        productId: String(productId), // Guardamos el ID para leerlo tras el pago en el Webhook
+        productId: String(productId),
       },
     });
 

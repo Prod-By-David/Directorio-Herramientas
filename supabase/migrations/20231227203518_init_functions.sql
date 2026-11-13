@@ -12,4 +12,3 @@ begin
   return user_id;
 end;
 $$ language plpgsql security invoker;
-
