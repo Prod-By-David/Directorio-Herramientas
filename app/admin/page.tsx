@@ -2,12 +2,45 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+
+// Función auxiliar para verificar si el usuario es administrador
+async function verifyAdmin() {
+  const cookieStore = await cookies()
+  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+      },
+    }
+  )
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    redirect('/login')
+  }
+
+  const adminEmails = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : []
+  if (user.email && adminEmails.length > 0 && !adminEmails.includes(user.email)) {
+    redirect('/')
+  }
+
+  return user
+}
 
 // Server Action para Aprobar herramienta
 async function handleApprove(formData: FormData) {
   'use server'
+  await verifyAdmin()
+
   const id = formData.get('id') as string
-  const cookieStore = await cookies() // <- Corregido: async/await obligatorio en Next.js
+  const cookieStore = await cookies()
   
   const sbAdmin = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,8 +61,10 @@ async function handleApprove(formData: FormData) {
 // Server Action para Rechazar/Eliminar herramienta
 async function handleDelete(formData: FormData) {
   'use server'
+  await verifyAdmin()
+
   const id = formData.get('id') as string
-  const cookieStore = await cookies() // <- Corregido: async/await obligatorio en Next.js
+  const cookieStore = await cookies()
   
   const sbAdmin = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,7 +83,9 @@ async function handleDelete(formData: FormData) {
 }
 
 export default async function AdminDashboard() {
-  const cookieStore = await cookies() // <- Corregido: async/await obligatorio en Next.js
+  await verifyAdmin()
+
+  const cookieStore = await cookies()
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
