@@ -3,6 +3,9 @@ import type { ReactNode } from "react"
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 
+import { isSupabaseConfigured } from "@/db/supabase/env"
+import { THEME_INIT_SCRIPT } from "@/lib/theme-script"
+import { SetupRequired } from "@/components/setup-required"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -31,17 +34,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" className={`${fontSans.variable} font-sans  `}>
+    <html
+      lang="es"
+      className={`${fontSans.variable} font-sans  `}
+      suppressHydrationWarning
+    >
+      <head>
+        {/* Script de tema en el servidor: evita el aviso de React 19 por <script> en el cliente */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider defaultTheme="system">
           <TooltipProvider>
             <main className="bg-[#FAFAFA] dark:bg-background  text-foreground flex flex-col justify-center items-center w-full pt-13">
-              <div className=" w-full ">{children}</div>
+              <div className=" w-full ">
+                {isSupabaseConfigured() ? children : <SetupRequired />}
+              </div>
             </main>
           </TooltipProvider>
           <Toaster richColors />

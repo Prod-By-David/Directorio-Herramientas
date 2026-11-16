@@ -1,13 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
+import { getSupabaseEnv, isSupabaseConfigured } from "./env"
+
 export const updateSession = async (request: NextRequest) => {
   let response = NextResponse.next({ request })
 
+  // Sin configuración no hay sesión que refrescar (el layout muestra la pantalla de configuración)
+  if (!isSupabaseConfigured()) return response
+
   try {
+    const { url, anonKey } = getSupabaseEnv()
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      url,
+      anonKey,
       {
         cookies: {
           getAll() {
