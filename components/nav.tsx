@@ -55,12 +55,12 @@ export function NavSidebar({
   const router = useRouter()
 
   const handleLogout = async () => {
-    const db = await createClient()
+    const db = createClient()
     const { error } = await db.auth.signOut()
     if (error) {
       console.error("Error logging out:", error.message)
     } else {
-      router.push("/login") // Redirect to login page after logout
+      router.push("/login")
     }
   }
 
@@ -102,10 +102,15 @@ export function NavSidebar({
           }
         >
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Avatar>
-                <AvatarFallback className="bg-gradient-to-r from-yellow-300 to-yellow-300" />
-              </Avatar>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-to-r from-yellow-300 to-yellow-300" />
+                </Avatar>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
@@ -114,12 +119,14 @@ export function NavSidebar({
               <div className="p-[1px] bg-background rounded-md">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-primary" />
-                <DropdownMenuItem>
-                  <Link href="/admin">Admin</Link>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin" className="w-full cursor-pointer">
+                    Admin
+                  </Link>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator className="bg-primary" />
-                <DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Button className="w-full" onClick={handleLogout}>
                     <LogOutIcon className="mr-1 size-4" /> Logout
                   </Button>
@@ -127,7 +134,7 @@ export function NavSidebar({
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
-          <div className="">
+          <div>
             <ModeToggle />
           </div>
         </div>
@@ -161,55 +168,58 @@ export function NavSidebar({
                     <AdminNav pathname={pathname} />
                   </>
                 ) : (
-                  <>
-                    <ProductNav
-                      tags={tags}
-                      labels={labels}
-                      categories={categories}
-                      handleLinkClick={handleLinkClick}
-                      searchParams={searchParams}
-                    >
-                      <div className="my-4 space-y-3">
-                        <Link
-                          href="/"
-                          className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                          prefetch={false}
-                          onClick={handleLinkClick}
-                        >
-                          <HomeIcon className="h-5 w-5" />
-                          Home
-                        </Link>
-                        <Link
-                          href="/submit"
-                          className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                          prefetch={false}
-                          onClick={handleLinkClick}
-                        >
-                          <PlusIcon className="h-5 w-5" />
-                          Submit
-                        </Link>
+                  <ProductNav
+                    tags={tags}
+                    labels={labels}
+                    categories={categories}
+                    handleLinkClick={handleLinkClick}
+                    searchParams={searchParams}
+                  >
+                    <div className="my-4 space-y-3">
+                      <Link
+                        href="/"
+                        className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                        prefetch={false}
+                        onClick={handleLinkClick}
+                      >
+                        <HomeIcon className="h-5 w-5" />
+                        Home
+                      </Link>
+                      <Link
+                        href="/submit"
+                        className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                        prefetch={false}
+                        onClick={handleLinkClick}
+                      >
+                        <PlusIcon className="h-5 w-5" />
+                        Submit
+                      </Link>
 
-                        <Link
-                          href="/login"
-                          className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                          prefetch={false}
-                          onClick={handleLinkClick}
-                        >
-                          <LogIn className="h-5 w-5" />
-                          Login
-                        </Link>
-                      </div>
-                    </ProductNav>
-                  </>
+                      <Link
+                        href="/login"
+                        className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                        prefetch={false}
+                        onClick={handleLinkClick}
+                      >
+                        <LogIn className="h-5 w-5" />
+                        Login
+                      </Link>
+                    </div>
+                  </ProductNav>
                 )}
               </nav>
               <div className="flex flex-col items-start pl-4">
-                <nav className="mb-6   flex gap-4 ">
+                <nav className="mb-6 flex gap-4">
                   <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Avatar>
-                        <AvatarFallback className="bg-gradient-to-r from-yellow-300 to-yellow-300" />
-                      </Avatar>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <Avatar>
+                          <AvatarFallback className="bg-gradient-to-r from-yellow-300 to-yellow-300" />
+                        </Avatar>
+                      </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="end"
@@ -221,7 +231,7 @@ export function NavSidebar({
                         <DropdownMenuItem>Settings</DropdownMenuItem>
                         <DropdownMenuItem>Support</DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-primary" />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                           <Button className="w-full" onClick={handleLogout}>
                             <LogOutIcon className="mr-1 size-4" /> Logout
                           </Button>
@@ -258,7 +268,7 @@ function ProductNav({
   children,
 }: ProductNavProps) {
   return (
-    <div className="">
+    <div>
       <LogoAnimationLink />
       {children}
       <ScrollArea className="h-[calc(100vh-320px)] md:h-[calc(100vh-200px)] flex flex-col gap-4 pl-2">

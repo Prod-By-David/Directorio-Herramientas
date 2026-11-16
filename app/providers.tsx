@@ -18,15 +18,32 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
 
 export function ModeToggle() {
   const { setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  // Evitamos problemas de hidratación en la renderización del cliente/servidor del tema
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted opacity-0">
+        <span className="sr-only">Toggle theme</span>
+      </div>
+    )
+  }
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-10 w-10 rounded-full">
-        <div className="flex h-full w-full items-center justify-center rounded-full bg-muted">
-          <Sun className=" rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute  rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
-        </div>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="border border-primary/40">
         <DropdownMenuItem onClick={() => setTheme("light")}>

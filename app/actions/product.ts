@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/db/supabase/server"
 
 export async function getFilters() {
-  const db = createClient()
+  const db = await createClient() // CORREGIDO: Añadido await
   
   const [categoriesRes, labelsRes, tagsRes] = await Promise.all([
     db.from("products").select("categories").eq("approved", true),
@@ -38,12 +38,12 @@ export const getProducts = cache(
     label?: string,
     tag?: string
   ) => {
-    const db = createClient()
+    const db = await createClient() // CORREGIDO: Añadido await
     let query = db
       .from("products")
       .select("*")
       .eq("approved", true) // Seguridad: solo mostrar productos aprobados públicamente
-      .order("is_featured", { ascending: false }) // Comercial: Los de 99€ destacados van primero
+      .order("featured", { ascending: false }) // CORREGIDO: Cambiado a 'featured' para coincidir con la BD y el Webhook
       .order("created_at", { ascending: false })
 
     if (searchTerm) {
@@ -76,7 +76,7 @@ export const getProducts = cache(
 )
 
 export async function getProductById(id: string) {
-  const supabase = createClient()
+  const supabase = await createClient() // CORREGIDO: Añadido await
 
   const { data, error } = await supabase
     .from("products")
@@ -93,7 +93,7 @@ export async function getProductById(id: string) {
 }
 
 export async function incrementClickCount(id: string) {
-  const supabase = createClient()
+  const supabase = await createClient() // CORREGIDO: Añadido await
 
   const { data, error } = await supabase.rpc("increment_product_view_count", {
     product_id: id,
@@ -107,13 +107,13 @@ export async function incrementClickCount(id: string) {
 }
 
 export async function getApprovedProducts() {
-  const supabase = createClient()
+  const supabase = await createClient() // CORREGIDO: Añadido await
   
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('approved', true) 
-    .order('is_featured', { ascending: false }) 
+    .order('featured', { ascending: false }) // CORREGIDO: Cambiado a 'featured'
     .order('created_at', { ascending: false })
 
   if (error) {
