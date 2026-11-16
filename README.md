@@ -43,6 +43,17 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 4. `ADMIN_EMAILS="tu@email.com"` (el email debe estar confirmado en Supabase) y un `CRON_SECRET` largo.
 5. `pnpm dev` y abre http://localhost:3000.
 
+## Problemas frecuentes
+
+- **"Your project's URL and Key are required to create a Supabase client"** (o pantalla "Falta configurar el
+  entorno"): falta `.env.local` o las variables `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+  Copia `.env.example` a `.env.local`, rellénalas (Supabase → Project Settings → API) y **reinicia** `pnpm dev`
+  (las variables solo se leen al arrancar).
+- **"Encountered a script tag while rendering React component"**: lo causaba `next-themes` con React 19.
+  Se sustituyó por un proveedor de tema propio (`app/providers.tsx`) con el script en el layout (`lib/theme-script.ts`).
+- Al actualizar desde un zip anterior, extrae en una **carpeta nueva** (o borra la anterior): extraer encima deja
+  archivos eliminados, como las capturas de la plantilla de `app/*-image.png`.
+
 ## Subir a GitHub
 
 - El repositorio **no contiene secretos**: `.env*` está ignorado salvo `.env.example`.
