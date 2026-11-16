@@ -23,17 +23,17 @@ export function ResetPassword({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">Forgot your password?</Button>
+        <Button variant="outline">¿Olvidaste tu contraseña?</Button>
       </DialogTrigger>
       <DialogContent className="h-[240px] w-[400px] p-4">
         <DialogHeader>
-          <DialogTitle>Forgot Password</DialogTitle>
+          <DialogTitle>Recuperar contraseña</DialogTitle>
           <DialogDescription>
-            Enter your email to receive password reset instructions.
+            Introduce tu email para recibir las instrucciones.
           </DialogDescription>
           <DialogClose asChild>
             <Button type="button" variant="secondary">
-              Close
+              Cerrar
             </Button>
           </DialogClose>
         </DialogHeader>
@@ -42,13 +42,13 @@ export function ResetPassword({
           <label className="text-md" htmlFor="email">
             Email
           </label>
-          <Input name="email" placeholder="you@example.com" required />
+          <Input type="email" name="email" placeholder="tu@email.com" required />
           <SubmitButton
             formAction={handleResetPassword}
             className="button border border-foreground/20 rounded-md px-4 py-2 text-foreground mb-2"
-            pendingText="Sending Instructions..."
+            pendingText="Enviando..."
           >
-            Send Instructions
+            Enviar instrucciones
           </SubmitButton>
         </form>
       </DialogContent>

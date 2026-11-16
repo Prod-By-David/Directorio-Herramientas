@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useTransition } from "react"
 import Link from "next/link"
 import {
   ArrowLeft,
@@ -14,6 +14,7 @@ import {
   Tag,
   Loader2,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
 import {
@@ -23,55 +24,61 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { CardDescription, CardTitle } from "@/components/ui/card"
+import { startFeaturedTrial } from "@/app/actions/featured"
+import { formatDate, isFeaturedActive } from "@/lib/featured"
+import { FEATURED_PLANS, TRIAL_DAYS, formatPrice } from "@/lib/featured-plans"
+import type { PublicProduct as Product } from "@/lib/types"
 
-interface Product {
-  id: string
-  created_at: string
-  full_name: string
-  email: string
-  twitter_handle: string
-  product_website: string
-  codename: string
-  punchline: string
-  description: string
-  logo_src: string
-  user_id: string
-  tags: string[]
-  view_count: number
-  approved: boolean
-  labels: string[]
-  categories: string
-  is_featured?: boolean // Añadido opcional por si lo usas más adelante
-}
+export const ProductDetails = ({
+  product,
+  canManageFeatured,
+  trialAvailable,
+  checkoutStatus,
+}: {
+  product: Product
+  canManageFeatured: boolean
+  trialAvailable: boolean
+  checkoutStatus: "success" | "canceled" | null
+}) => {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [isTrialPending, startTrial] = useTransition()
+  const featuredActive = isFeaturedActive(product)
+  const testMode = (
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""
+  ).startsWith("pk_test_")
 
-export const ProductDetails = ({ product }: { product: Product }) => {
-  const [isLoading, setIsLoading] = useState(false)
-
-  // Función para gestionar el pago de 99 € con Stripe
-  const handleCheckout = async () => {
+  // Pago con Stripe: el precio lo decide el servidor a partir del plan
+  const handleCheckout = async (planId: string) => {
     try {
-      setIsLoading(true)
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          productId: product.id, 
-          productName: product.punchline || product.codename 
-        }),
+      setLoadingPlan(planId)
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id, planId }),
       })
-
       const data = await response.json()
       if (data.url) {
-        window.location.href = data.url // Redirige al Stripe Checkout
-      } else {
-        alert('Error al iniciar el pago: ' + (data.error || 'Desconocido'))
-        setIsLoading(false)
+        window.location.href = data.url // Redirige a Stripe Checkout
+        return
       }
+      toast.error(data.error || "No se pudo iniciar el pago")
     } catch (error) {
-      console.error('Error:', error)
-      alert('Hubo un error de conexión con la pasarela de pagos.')
-      setIsLoading(false)
+      console.error("Error:", error)
+      toast.error("Error de conexión con la pasarela de pagos")
     }
+    setLoadingPlan(null)
+  }
+
+  const handleTrial = () => {
+    startTrial(async () => {
+      const res = await startFeaturedTrial(product.id)
+      if (res.ok) {
+        toast.success(res.message)
+        window.location.reload()
+      } else {
+        toast.error(res.message)
+      }
+    })
   }
 
   return (
@@ -81,7 +88,7 @@ export const ProductDetails = ({ product }: { product: Product }) => {
           <div className="space-y-6 col-span-6 md:col-span-5 md:mt-12 z-10">
             <Breadcrumb>
               <BreadcrumbItem>
-                <BreadcrumbLink href="/">Products</BreadcrumbLink>/
+                <BreadcrumbLink href="/">Herramientas</BreadcrumbLink>/
                 <BreadcrumbLink href={`/products/${product.id}`}>
                   {product.codename.substring(0, 20)}
                 </BreadcrumbLink>
@@ -105,7 +112,7 @@ export const ProductDetails = ({ product }: { product: Product }) => {
               href={`/products`}
               className="py-4 md:flex items-center text-2xl font-semibold text-yellow-500  z-10 hidden"
             >
-              <ArrowLeft className="mr-2" /> Back to all products
+              <ArrowLeft className="mr-2" /> Volver a todas las herramientas
             </Link>
           </div>
 
@@ -119,7 +126,7 @@ export const ProductDetails = ({ product }: { product: Product }) => {
               <img
                 className="w-full h-full rounded-3xl object-cover"
                 src={product.logo_src}
-                alt={`${product.full_name} image`}
+                alt={product.codename}
               />
             </div>
             <CardDescription className="text-2xl tracking-tight leading-tight text-neutral-800 text-balance dark:text-neutral-400">
@@ -127,7 +134,8 @@ export const ProductDetails = ({ product }: { product: Product }) => {
             </CardDescription>
 
             <div className="md:text-xl sm:text-lg tracking-tight text-neutral-800 text-balance dark:text-neutral-400 flex gap-2 items-center flex-wrap text-sm">
-              {product.labels[0] !== "unlabeled" &&
+              {product.labels.length > 0 &&
+                product.labels[0] !== "unlabeled" &&
                 product.labels.map((label, index) => (
                   <Link
                     href={`/products?label=${label}`}
@@ -139,7 +147,23 @@ export const ProductDetails = ({ product }: { product: Product }) => {
                 ))}
             </div>
 
-            {/* Contenedor de Botones de Acción (Visitar web + Destacar por 99€) */}
+            {!product.approved && (
+              <p className="rounded-2xl border border-yellow-500/40 bg-yellow-500/10 p-4 text-sm">
+                Esta herramienta está pendiente de aprobación y solo la ves tú.
+              </p>
+            )}
+            {checkoutStatus === "success" && (
+              <p className="rounded-2xl border border-green-500/40 bg-green-500/10 p-4 text-sm">
+                Pago recibido. El destacado se activa en unos segundos; si no
+                lo ves, recarga la página.
+              </p>
+            )}
+            {checkoutStatus === "canceled" && (
+              <p className="rounded-2xl border border-neutral-500/40 p-4 text-sm">
+                Pago cancelado. No se ha realizado ningún cargo.
+              </p>
+            )}
+
             <div className="space-y-4 w-full">
               {product.product_website && (
                 <Button
@@ -153,26 +177,70 @@ export const ProductDetails = ({ product }: { product: Product }) => {
                     target="_blank"
                     rel="noreferrer noopener"
                   >
-                    <span className="font-semibold">Check out site</span>
+                    <span className="font-semibold">Visitar web</span>
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
               )}
 
-              {/* Botón de pago de Stripe para Destacar la Herramienta */}
-              <Button
-                onClick={handleCheckout}
-                disabled={isLoading}
-                size="lg"
-                className="w-full flex items-center justify-center py-6 text-lg rounded-[44px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg"
-              >
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-5 w-5 text-yellow-300" />
-                )}
-                <span className="font-bold">Destacar herramienta (99 €)</span>
-              </Button>
+              {featuredActive && product.featured_until && (
+                <p className="flex items-center justify-center gap-2 rounded-[44px] bg-gradient-to-r from-purple-600 to-indigo-600 py-3 text-white font-semibold">
+                  <Sparkles className="h-5 w-5 text-yellow-300" />
+                  Destacada hasta el {formatDate(product.featured_until)}
+                </p>
+              )}
+
+              {canManageFeatured && (
+                <div className="space-y-3 rounded-3xl border border-black/10 dark:border-white/10 p-4">
+                  <p className="font-bold text-lg">
+                    {featuredActive ? "Ampliar destacado" : "Destacar herramienta"}
+                  </p>
+                  {testMode && (
+                    <p className="text-xs text-muted-foreground">
+                      Modo prueba: usa la tarjeta 4242 4242 4242 4242, cualquier
+                      fecha futura y cualquier CVC. No se realizan cargos reales.
+                    </p>
+                  )}
+                  {trialAvailable && (
+                    <Button
+                      onClick={handleTrial}
+                      disabled={isTrialPending || loadingPlan !== null}
+                      variant="outline"
+                      size="lg"
+                      className="w-full rounded-[44px]"
+                    >
+                      {isTrialPending ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-2 h-5 w-5" />
+                      )}
+                      Probar {TRIAL_DAYS} días gratis
+                    </Button>
+                  )}
+                  {FEATURED_PLANS.map((plan) => (
+                    <Button
+                      key={plan.id}
+                      onClick={() => handleCheckout(plan.id)}
+                      disabled={loadingPlan !== null || isTrialPending}
+                      size="lg"
+                      className="w-full flex items-center justify-between py-6 text-base rounded-[44px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg"
+                    >
+                      <span className="flex items-center">
+                        {loadingPlan === plan.id ? (
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-2 h-5 w-5 text-yellow-300" />
+                        )}
+                        <span className="font-bold">{plan.label}</span>
+                      </span>
+                      <span className="font-bold">
+                        {formatPrice(plan.amountCents)}
+                        {plan.kind === "subscription" ? "/mes" : ""}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
@@ -182,7 +250,7 @@ export const ProductDetails = ({ product }: { product: Product }) => {
         href={`/`}
         className="py-4 md:hidden items-center text-2xl font-semibold text-yellow-500  z-10 w-full flex"
       >
-        <ArrowLeft className="mr-2" /> Back to all productss
+        <ArrowLeft className="mr-2" /> Volver a todas las herramientas
       </Link>
       <div className="absolute top-36 md:top-0 left-[-10%] right-0 h-[400px] w-[300px]  md:h-[500px] md:w-[500px] rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,235,59,.15),rgba(255,255,255,0))]"></div>
     </div>

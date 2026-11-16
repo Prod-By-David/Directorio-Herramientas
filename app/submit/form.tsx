@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useActionState, useEffect, useRef, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { X } from "lucide-react"
-import { useFormState } from "react-dom"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -30,37 +29,25 @@ import { FileUploader } from "@/components/cult/file-drop"
 import { GradientHeading } from "@/components/cult/gradient-heading"
 
 import { StyledButton } from "../login/submit-button"
-import { onSubmitToolAction } from "./action"
+import { onSubmitToolAction, type FormState } from "./action"
+import { CATEGORY_OPTIONS } from "./categories"
 import { schema } from "./schema"
 
-// To trigger async toast
-const p = () => new Promise((resolve) => setTimeout(() => resolve(""), 900))
-
-const categories = [
-  { label: "Boilerplate", value: "boilerplate" },
-  { label: "Analytics", value: "analytics" },
-  { label: "Marketing Tools", value: "marketing-tools" },
-  { label: "Developer Tools", value: "developer-tools" },
-  { label: "E-commerce", value: "e-commerce" },
-  { label: "Productivity", value: "productivity" },
-  { label: "Design Tools", value: "design-tools" },
-  { label: "Fintech", value: "fintech" },
-  { label: "Education", value: "education" },
-  { label: "SaaS", value: "saas" },
-]
+const initialState: FormState = { message: "", issues: [] }
 
 export const SubmitTool = () => {
-  const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const [isTransitionPending, startTransition] = useTransition()
 
-  const [state, formAction] = useFormState(onSubmitToolAction, {
-    message: "",
-    issues: [],
-  })
+  const [state, formAction, isActionPending] = useActionState(
+    onSubmitToolAction,
+    initialState
+  )
+  const loading = isTransitionPending || isActionPending
 
   const form = useForm<z.output<typeof schema>>({
     resolver: zodResolver(schema),
-    mode: "onChange", // Enable validation on change to get real-time validation state
+    mode: "onChange",
     defaultValues: {
       fullName: "",
       email: "",
@@ -72,27 +59,26 @@ export const SubmitTool = () => {
       images: [],
       logo_src: "",
       categories: "",
-      ...(state?.fields ?? {}),
     },
   })
 
   const { isValid } = form.formState
-
   const formRef = useRef<HTMLFormElement>(null)
 
+  // Solo se navega a la home si el envío fue correcto
   useEffect(() => {
-    if (state.message && state.issues.length < 1) {
-      toast.success(state.message)
-    } else if (state.issues.length >= 1) {
+    if (!state.message) return
+    if (state.issues.length > 0) {
       toast.error(state.issues.join(", "))
-      setLoading(false)
+    } else {
+      toast.success(state.message)
+      router.push("/")
     }
-    setLoading(false)
-  }, [state.message, state.issues])
+  }, [state, router])
 
   return (
     <Form {...form}>
-      {state?.issues && (
+      {state.issues.length > 0 && (
         <div className="text-red-500">
           <ul>
             {state.issues.map((issue) => (
@@ -107,35 +93,28 @@ export const SubmitTool = () => {
       <form
         ref={formRef}
         className="space-y-8"
-        action={formAction}
         onSubmit={(evt) => {
           evt.preventDefault()
-          setLoading(true)
-          toast.promise(p, { loading: "Submitting..." })
-          form.handleSubmit(async (data) => {
-            let formData = new FormData(formRef.current!)
+          form.handleSubmit(() => {
+            const formData = new FormData(formRef.current!)
             const logoFile = form.getValues("images")
-            if (logoFile.length > 0) {
+            if (logoFile && logoFile.length > 0) {
               formData.set("images", logoFile[0])
             }
-            setLoading(false)
-            await formAction(formData)
-            router.push("/")
+            startTransition(() => formAction(formData))
           })(evt)
         }}
       >
-        <GradientHeading size="xs">
-          Let's start with your personal deets
-        </GradientHeading>
+        <GradientHeading size="xs">Empecemos por tus datos</GradientHeading>
         <div className="flex flex-wrap gap-1 md:gap-2">
           <FormField
             control={form.control}
             name="fullName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Full name</FormLabel>
+                <FormLabel>Nombre completo</FormLabel>
                 <FormControl>
-                  <Input placeholder="Full name" {...field} />
+                  <Input placeholder="Nombre completo" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -146,9 +125,9 @@ export const SubmitTool = () => {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email address</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="Email address" {...field} />
+                  <Input type="email" placeholder="Email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -159,9 +138,9 @@ export const SubmitTool = () => {
             name="twitterHandle"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Your Twitter handle</FormLabel>
+                <FormLabel>Tu usuario de X/Twitter</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your Twitter handle" {...field} />
+                  <Input placeholder="@usuario" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -172,9 +151,9 @@ export const SubmitTool = () => {
             name="productWebsite"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Product website</FormLabel>
+                <FormLabel>Web de la herramienta</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your product url" {...field} />
+                  <Input placeholder="https://tuherramienta.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -182,17 +161,15 @@ export const SubmitTool = () => {
           />
         </div>
 
-        <GradientHeading size="xs">
-          Tell us more about your product
-        </GradientHeading>
+        <GradientHeading size="xs">Cuéntanos sobre tu herramienta</GradientHeading>
         <FormField
           control={form.control}
           name="codename"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Your product's name</FormLabel>
+              <FormLabel>Nombre de la herramienta</FormLabel>
               <FormControl>
-                <Input placeholder="Your product's codename" {...field} />
+                <Input placeholder="Nombre de la herramienta" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -203,9 +180,9 @@ export const SubmitTool = () => {
           name="punchline"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Your product's punchline (&lt;10 words)</FormLabel>
+              <FormLabel>Eslogan (máx. 60 caracteres)</FormLabel>
               <FormControl>
-                <Input placeholder="Your product's punchline" {...field} />
+                <Input placeholder="Eslogan" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -216,9 +193,9 @@ export const SubmitTool = () => {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>A short description here (~70 words)</FormLabel>
+              <FormLabel>Descripción breve (máx. 600 caracteres)</FormLabel>
               <FormControl>
-                <Input placeholder="A short description here" {...field} />
+                <Input placeholder="Descripción breve" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -230,7 +207,7 @@ export const SubmitTool = () => {
           render={({ field }) => (
             <div className="space-y-6">
               <FormItem className="w-full">
-                <FormLabel>Logo file (.jpg or .png format, 128x128)</FormLabel>
+                <FormLabel>Logo (PNG, JPG o WEBP, máx. 2 MB)</FormLabel>
                 <FormControl>
                   <FileUploader
                     value={field.value}
@@ -247,7 +224,7 @@ export const SubmitTool = () => {
           name="categories"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Product Category</FormLabel>
+              <FormLabel>Categoría</FormLabel>
               <Select
                 onValueChange={field.onChange}
                 defaultValue={field.value}
@@ -259,18 +236,15 @@ export const SubmitTool = () => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem
-                      key={category.label}
-                      value={(category.value ?? "").toLowerCase()}
-                    >
+                  {CATEGORY_OPTIONS.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
                       {category.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <FormDescription>
-                This is the categories that will be used in the dashboard.
+                Se usa para clasificar tu herramienta en el directorio.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -279,7 +253,7 @@ export const SubmitTool = () => {
 
         {isValid && (
           <StyledButton disabled={loading} type="submit">
-            Submit
+            {loading ? "Enviando..." : "Enviar"}
           </StyledButton>
         )}
       </form>

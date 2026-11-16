@@ -1,26 +1,53 @@
-import { notFound, redirect } from "next/navigation"
+import { notFound } from "next/navigation"
+import { createClient } from "@/db/supabase/server"
+import { isFeaturedActive } from "@/lib/featured"
 
 import { FadeIn } from "@/components/cult/fade-in"
-import { getProductById } from "@/app/actions/product"
+import { getOwnerState, getProductById } from "@/app/actions/product"
 
 import { ProductDetails } from "./details"
 
-const ProductIdPage = async ({ params }: { params: { slug: string } }) => {
-  let data = await getProductById(params.slug)
+const ProductIdPage = async ({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ checkout?: string }>
+}) => {
+  const { slug } = await params
+  const { checkout } = await searchParams
 
-  if (!data) {
-    notFound()
-    // redirect("/")
-  }
+  // getProductById devuelve un único objeto (antes se hacía data[0] y fallaba)
+  const product = await getProductById(slug)
+  if (!product) notFound()
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const owner = user
+    ? await getOwnerState(product.id, user.id)
+    : { isOwner: false, trialUsed: false }
+
+  const canManageFeatured = owner.isOwner && product.approved
+  const trialAvailable =
+    canManageFeatured && !owner.trialUsed && !isFeaturedActive(product)
 
   return (
-    <>
-      <div className="z-10">
-        <div className=" py-4 w-full relative  mx-auto max-w-6xl">
-          <FadeIn>{data ? <ProductDetails product={data[0]} /> : null}</FadeIn>
-        </div>
+    <div className="z-10">
+      <div className=" py-4 w-full relative  mx-auto max-w-6xl">
+        <FadeIn>
+          <ProductDetails
+            product={product}
+            canManageFeatured={canManageFeatured}
+            trialAvailable={trialAvailable}
+            checkoutStatus={
+              checkout === "success" || checkout === "canceled" ? checkout : null
+            }
+          />
+        </FadeIn>
       </div>
-    </>
+    </div>
   )
 }
 

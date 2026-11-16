@@ -1,8 +1,6 @@
-"use server"
-
 import "server-only"
-import { unstable_cache } from "next/cache"
-import { createClient } from "@supabase/supabase-js"
+import { cache } from "react"
+import { createClient } from "@/db/supabase/server"
 
 type FilterData = {
   categories: string[]
@@ -10,69 +8,36 @@ type FilterData = {
   tags: string[]
 }
 
-type CategoryData = {
-  name: string
-}
+const unique = (array: string[]) => [...new Set(array)]
 
-type LabelData = {
-  name: string
-}
+/** Filtros del sidebar: categorías (tabla + usadas) y labels/tags de productos aprobados. */
+export const getCachedFilters = cache(async (): Promise<FilterData> => {
+  const db = await createClient()
+  const [catRes, prodRes] = await Promise.all([
+    db.from("categories").select("name"),
+    db.from("products").select("categories, labels, tags").eq("approved", true),
+  ])
 
-type TagData = {
-  name: string
-}
-
-const client = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-async function getFilters(): Promise<FilterData> {
-  const { data: categoriesData, error: categoriesError } = await client
-    .from("categories")
-    .select("name")
-
-  const { data: labelsData, error: labelsError } = await client
-    .from("labels")
-    .select("name")
-
-  const { data: tagsData, error: tagsError } = await client
-    .from("tags")
-    .select("name")
-
-  if (categoriesError || labelsError || tagsError) {
-    console.error(
-      "Error fetching filters:",
-      categoriesError,
-      labelsError,
-      tagsError
-    )
+  if (catRes.error || prodRes.error) {
+    console.error("Error fetching filters:", catRes.error, prodRes.error)
     return { categories: [], labels: [], tags: [] }
   }
 
-  const unique = (array: string[]) => [...new Set(array)]
+  const prods = (prodRes.data ?? []) as {
+    categories: string | null
+    labels: string[] | null
+    tags: string[] | null
+  }[]
 
-  const categories = categoriesData
-    ? unique(
-        categoriesData.map((item: CategoryData) => item.name).filter(Boolean)
-      )
-    : []
+  const categories = unique([
+    ...(catRes.data ?? []).map((c: { name: string }) => c.name),
+    ...prods.map((p) => p.categories ?? ""),
+  ]).filter(Boolean)
 
-  const labels = labelsData
-    ? unique(labelsData.map((item: LabelData) => item.name).filter(Boolean))
-    : []
-
-  const tags = tagsData
-    ? unique(tagsData.map((item: TagData) => item.name).filter(Boolean))
-    : []
+  const labels = unique(prods.flatMap((p) => p.labels ?? [])).filter(
+    (l) => l && l !== "unlabeled"
+  )
+  const tags = unique(prods.flatMap((p) => p.tags ?? [])).filter(Boolean)
 
   return { categories, labels, tags }
-}
-
-export const getCachedFilters = unstable_cache(
-  async (): Promise<FilterData> => {
-    const { categories, labels, tags } = await getFilters()
-    return { categories, labels, tags }
-  },
-  ["product-filters"],
-  { tags: [`product_filters`], revalidate: 9000 }
-)
+})

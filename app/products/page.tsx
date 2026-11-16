@@ -1,8 +1,7 @@
 import { ReactElement } from "react"
 import { BoxIcon, Hash, Search, TagIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+import { getIsAdmin } from "@/lib/admin"
 import { FadeIn } from "@/components/cult/fade-in"
 import { GradientHeading } from "@/components/cult/gradient-heading"
 import { ResourceCardGrid } from "@/components/directory-card-grid"
@@ -16,16 +15,19 @@ export const dynamic = "force-dynamic"
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     search?: string
     category?: string
     label?: string
     tag?: string
-  }
+  }>
 }): Promise<ReactElement> {
-  const { search, category, label, tag } = searchParams
-  const data = await getProducts(search, category, label, tag)
-  let filters = await getCachedFilters()
+  const { search, category, label, tag } = await searchParams
+  const [data, filters, isAdmin] = await Promise.all([
+    getProducts(search, category, label, tag),
+    getCachedFilters(),
+    getIsAdmin(),
+  ])
 
   return (
     <>
@@ -33,6 +35,7 @@ export default async function ProductsPage({
         categories={filters.categories}
         labels={filters.labels}
         tags={filters.tags}
+        isAdmin={isAdmin}
       />
 
       <div className=" max-w-full pt-4">
@@ -53,9 +56,9 @@ export default async function ProductsPage({
                   {tag ? (
                     <TagIcon className="mr-1 bg-neutral-800 fill-yellow-300/30 stroke-yellow-500 size-6 p-1 rounded-full" />
                   ) : null}
-                  {search ? "search" : ""}
-                  {category ? "category" : ""}
-                  {label ? "label" : ""}
+                  {search ? "búsqueda" : ""}
+                  {category ? "categoría" : ""}
+                  {label ? "etiqueta" : ""}
                   {tag ? "tag" : ""}
                 </div>
                 <GradientHeading size="xxl">

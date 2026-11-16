@@ -17,80 +17,89 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ResetPassword } from "./reset-password"
 import { SubmitButton } from "./submit-button"
 
+const msg = (text: string) => `/login?message=${encodeURIComponent(text)}`
+
+async function getOrigin() {
+  return (
+    (await headers()).get("origin") ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    "http://localhost:3000"
+  )
+}
+
 export function LoginForm() {
   const signIn = async (formData: FormData) => {
     "use server"
 
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-    const supabase = createClient()
+    const email = String(formData.get("email") ?? "")
+    const password = String(formData.get("password") ?? "")
+    const supabase = await createClient()
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
-    if (error) return redirect("/login?message=Could not authenticate user")
+    if (error) return redirect(msg("No se pudo iniciar sesión. Revisa tu email y contraseña."))
     return redirect("/submit")
   }
 
   const signUp = async (formData: FormData) => {
     "use server"
 
-    const origin = headers().get("origin")
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const origin = await getOrigin()
+    const email = String(formData.get("email") ?? "")
+    const password = String(formData.get("password") ?? "")
+    const supabase = await createClient()
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${origin}/auth/callback`,
       },
     })
-    if (error) return redirect("/login?message=Error signing up")
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (err) return redirect("/login?message=Could not authenticate user")
-    return redirect("/submit")
+    if (error) return redirect(msg(`No se pudo crear la cuenta: ${error.message}`))
+    // Con confirmación de email activada no hay sesión hasta que se confirma
+    if (data.session) return redirect("/submit")
+    return redirect(
+      msg("Cuenta creada. Revisa tu email para confirmarla y después inicia sesión.")
+    )
   }
 
   const handleResetPassword = async (formData: FormData) => {
     "use server"
 
-    const origin = headers().get("origin")
-    const email = formData.get("email") as string
-    const supabase = createClient()
+    const origin = await getOrigin()
+    const email = String(formData.get("email") ?? "")
+    const supabase = await createClient()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/auth/callback?next=/login/password`,
     })
-    if (error) return redirect(`/login?message=${error.message}`)
-    return redirect("/login?message=Check email to reset password")
+    if (error) return redirect(msg(error.message))
+    return redirect(msg("Revisa tu email para restablecer la contraseña"))
   }
 
   return (
     <div className="w-full flex flex-col items-center justify-center gap-2  ">
       <Tabs defaultValue="login">
         <TabsList>
-          <TabsTrigger value="login">Login</TabsTrigger>
-          <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          <TabsTrigger value="login">Acceder</TabsTrigger>
+          <TabsTrigger value="signup">Crear cuenta</TabsTrigger>
         </TabsList>
         <TabsContent value="login">
           <Card className="mx-auto w-[20rem] md:w-[24rem]">
             <CardHeader>
-              <CardTitle className="text-2xl">Login</CardTitle>
+              <CardTitle className="text-2xl">Acceder</CardTitle>
               <CardDescription>
-                Enter your information below to login to your account
+                Introduce tus datos para acceder a tu cuenta
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input name="email" placeholder="you@example.com" required />
+                  <Input type="email" name="email" placeholder="tu@email.com" required />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Contraseña</Label>
                   <Input
                     type="password"
                     required
@@ -102,9 +111,9 @@ export function LoginForm() {
                 <SubmitButton
                   formAction={signIn}
                   className="button-secondary rounded-md px-4 py-2 text-foreground mb-2"
-                  pendingText="Signing In..."
+                  pendingText="Accediendo..."
                 >
-                  Login
+                  Acceder
                 </SubmitButton>
               </form>
             </CardContent>
@@ -116,9 +125,9 @@ export function LoginForm() {
         <TabsContent value="signup">
           <Card className="mx-auto w-[20rem] md:w-[24rem]">
             <CardHeader>
-              <CardTitle className="text-2xl">Sign Up</CardTitle>
+              <CardTitle className="text-2xl">Crear cuenta</CardTitle>
               <CardDescription>
-                Enter your information below to create an account
+                Introduce tus datos para crear una cuenta
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -126,10 +135,10 @@ export function LoginForm() {
               <form className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input name="email" placeholder="you@example.com" required />
+                  <Input type="email" name="email" placeholder="tu@email.com" required />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Contraseña</Label>
                   <Input
                     type="password"
                     required
@@ -141,9 +150,9 @@ export function LoginForm() {
                 <SubmitButton
                   formAction={signUp}
                   className="button-secondary rounded-md px-4 py-2 text-foreground mb-2"
-                  pendingText="Signing Up..."
+                  pendingText="Creando cuenta..."
                 >
-                  Sign Up
+                  Crear cuenta
                 </SubmitButton>
               </form>
             </CardContent>

@@ -1,33 +1,27 @@
-"use server"
-
 import "server-only"
 import { cache } from "react"
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/db/supabase/server"
+import { createAdminClient } from "@/db/supabase/admin"
+import { sortByRanking } from "@/lib/featured"
+import { PRODUCT_PUBLIC_COLUMNS } from "@/lib/product-columns"
+import type { PublicProduct } from "@/lib/types"
 
-export async function getFilters() {
-  const db = await createClient() // CORREGIDO: Añadido await
-  
-  const [categoriesRes, labelsRes, tagsRes] = await Promise.all([
-    db.from("products").select("categories").eq("approved", true),
-    db.from("products").select("labels").eq("approved", true),
-    db.from("products").select("tags").eq("approved", true),
-  ])
+// Módulo de acceso a datos SOLO de servidor (ya no es "use server": sus
+// funciones no se exponen como endpoints públicos).
 
-  if (categoriesRes.error || labelsRes.error || tagsRes.error) {
-    console.error(
-      "Error fetching filters:",
-      categoriesRes.error,
-      labelsRes.error,
-      tagsRes.error
-    )
-    return { categories: [], labels: [], tags: [] }
-  }
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+function normalize(row: any): PublicProduct {
   return {
-    categories: Array.from(new Set(categoriesRes.data.map((item) => item.categories).filter(Boolean))),
-    labels: Array.from(new Set(labelsRes.data.flatMap((item) => item.labels).filter(Boolean))),
-    tags: Array.from(new Set(tagsRes.data.flatMap((item) => item.tags).filter(Boolean))),
+    ...row,
+    tags: row.tags ?? [],
+    labels: row.labels ?? [],
+    view_count: row.view_count ?? 0,
+    logo_src: row.logo_src || "/placeholder.png",
+    categories: row.categories ?? "",
+    featured: !!row.featured,
+    featured_until: row.featured_until ?? null,
   }
 }
 
@@ -37,89 +31,61 @@ export const getProducts = cache(
     category?: string,
     label?: string,
     tag?: string
-  ) => {
-    const db = await createClient() // CORREGIDO: Añadido await
+  ): Promise<PublicProduct[]> => {
+    const db = await createClient()
     let query = db
       .from("products")
-      .select("*")
-      .eq("approved", true) // Seguridad: solo mostrar productos aprobados públicamente
-      .order("featured", { ascending: false }) // CORREGIDO: Cambiado a 'featured' para coincidir con la BD y el Webhook
-      .order("created_at", { ascending: false })
+      .select(PRODUCT_PUBLIC_COLUMNS)
+      .eq("approved", true) // solo aprobados en el listado público
 
-    if (searchTerm) {
+    // Se limpian los caracteres con significado en la sintaxis de filtros de PostgREST
+    const term = searchTerm?.replace(/[,()%*\\]/g, " ").trim()
+    if (term) {
       query = query.or(
-        `codename.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,punchline.ilike.%${searchTerm}%`
+        `codename.ilike.%${term}%,description.ilike.%${term}%,punchline.ilike.%${term}%`
       )
     }
-
-    if (category) {
-      query = query.eq("categories", category)
-    }
-
-    if (label) {
-      query = query.contains("labels", [label])
-    }
-
-    if (tag) {
-      query = query.contains("tags", [tag])
-    }
+    if (category) query = query.eq("categories", category)
+    if (label) query = query.contains("labels", [label])
+    if (tag) query = query.contains("tags", [tag])
 
     const { data, error } = await query
-
     if (error) {
       console.error("Error searching resources:", error)
       return []
     }
-
-    return data
+    // El ranking (destacados vigentes primero) se calcula aquí: no depende de que el cron haya corrido.
+    return sortByRanking((data as unknown as any[]).map(normalize))
   }
 )
 
-export async function getProductById(id: string) {
-  const supabase = await createClient() // CORREGIDO: Añadido await
-
-  const { data, error } = await supabase
+/** Un producto por id. RLS: aprobados para todos; los pendientes solo los ve su dueño. */
+export async function getProductById(id: string): Promise<PublicProduct | null> {
+  if (!UUID_RE.test(id)) return null
+  const db = await createClient()
+  const { data, error } = await db
     .from("products")
-    .select("*")
+    .select(PRODUCT_PUBLIC_COLUMNS)
     .eq("id", id)
-    .single() // Usamos single() para traer un solo objeto en lugar de un array
+    .maybeSingle()
 
   if (error) {
     console.error("Error fetching product by ID:", error)
     return null
   }
-
-  return data
+  return data ? normalize(data) : null
 }
 
-export async function incrementClickCount(id: string) {
-  const supabase = await createClient() // CORREGIDO: Añadido await
-
-  const { data, error } = await supabase.rpc("increment_product_view_count", {
-    product_id: id,
-  })
-
-  if (error) {
-    console.error("Error incrementing click count:", error)
+/** Propiedad y estado de prueba (datos no públicos) vía service role, tras comprobar el id. */
+export async function getOwnerState(productId: string, userId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from("products")
+    .select("user_id, trial_used")
+    .eq("id", productId)
+    .maybeSingle()
+  return {
+    isOwner: !!data && data.user_id === userId,
+    trialUsed: !!data?.trial_used,
   }
-
-  revalidatePath("/products")
-}
-
-export async function getApprovedProducts() {
-  const supabase = await createClient() // CORREGIDO: Añadido await
-  
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('approved', true) 
-    .order('featured', { ascending: false }) // CORREGIDO: Cambiado a 'featured'
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error("Error fetching approved products:", error)
-    return []
-  }
-  
-  return data
 }
