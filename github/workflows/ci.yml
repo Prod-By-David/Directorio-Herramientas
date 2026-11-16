@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # Tras ejecutar `pnpm install` en local y subir el pnpm-lock.yaml actualizado,
+      # se puede cambiar a --frozen-lockfile.
+      - run: pnpm install --no-frozen-lockfile
+
+      - name: Tests unitarios
+        run: pnpm test
+
+      - name: Tipos
+        run: pnpm check-types
+
+      - name: Build (valores ficticios: solo modo prueba)
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
+          STRIPE_SECRET_KEY: sk_test_ci
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_ci
+          STRIPE_WEBHOOK_SECRET: whsec_ci
+          ALLOW_LIVE_PAYMENTS: "false"
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          ADMIN_EMAILS: ci@example.com
+          CRON_SECRET: ci-cron-secret
