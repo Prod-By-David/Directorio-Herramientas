@@ -1,5 +1,5 @@
 import { cookies } from "next/headers"
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { createServerClient } from "@supabase/ssr"
 
 export const createClient = async () => {
   const cookieStore = await cookies()
@@ -9,23 +9,17 @@ export const createClient = async () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // El método `set` fue llamado desde un Server Component.
-            // Esto se puede ignorar si tienes un middleware actualizando sesiones.
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: "", ...options })
-          } catch (error) {
-            // El método `remove/delete` fue llamado desde un Server Component.
-            // Esto se puede ignorar si tienes un middleware actualizando sesiones.
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Llamado desde un Server Component: se puede ignorar porque el
+            // middleware ya refresca la sesión en cada petición.
           }
         },
       },

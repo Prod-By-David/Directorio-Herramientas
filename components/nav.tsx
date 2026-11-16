@@ -7,8 +7,6 @@ import { createClient } from "@/db/supabase/client"
 import {
   BarChartIcon,
   BoxIcon,
-  FilterIcon,
-  FolderOpenIcon,
   Hash,
   HomeIcon,
   LogIn,
@@ -16,7 +14,6 @@ import {
   PanelLeftIcon,
   PlusIcon,
   TagIcon,
-  UsersIcon,
 } from "lucide-react"
 
 import { cn, truncateString } from "@/lib/utils"
@@ -44,10 +41,12 @@ export function NavSidebar({
   categories,
   tags,
   labels,
+  isAdmin = false,
 }: {
   categories?: string[]
   labels?: string[]
   tags?: string[]
+  isAdmin?: boolean
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -117,18 +116,22 @@ export function NavSidebar({
               className="bg-gradient-to-t from-primary/70 to-primary/80 rounded-lg"
             >
               <div className="p-[1px] bg-background rounded-md">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-primary" />
-                <DropdownMenuItem asChild>
-                  <Link href="/admin" className="w-full cursor-pointer">
-                    Admin
-                  </Link>
-                </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="w-full cursor-pointer">
+                        Admin
+                      </Link>
+                    </DropdownMenuItem>
 
-                <DropdownMenuSeparator className="bg-primary" />
+                    <DropdownMenuSeparator className="bg-primary" />
+                  </>
+                )}
                 <DropdownMenuItem asChild>
                   <Button className="w-full" onClick={handleLogout}>
-                    <LogOutIcon className="mr-1 size-4" /> Logout
+                    <LogOutIcon className="mr-1 size-4" /> Cerrar sesión
                   </Button>
                 </DropdownMenuItem>
               </div>
@@ -151,7 +154,7 @@ export function NavSidebar({
             <SheetTrigger asChild>
               <Button variant="outline" className="sm:hidden bg-accent">
                 <PanelLeftIcon />
-                <span className="sr-only">Toggle Menu</span>
+                <span className="sr-only">Abrir menú</span>
               </Button>
             </SheetTrigger>
             <div className="ml-auto mt-1 md:hidden">
@@ -183,7 +186,7 @@ export function NavSidebar({
                         onClick={handleLinkClick}
                       >
                         <HomeIcon className="h-5 w-5" />
-                        Home
+                        Inicio
                       </Link>
                       <Link
                         href="/submit"
@@ -192,7 +195,7 @@ export function NavSidebar({
                         onClick={handleLinkClick}
                       >
                         <PlusIcon className="h-5 w-5" />
-                        Submit
+                        Enviar herramienta
                       </Link>
 
                       <Link
@@ -202,7 +205,7 @@ export function NavSidebar({
                         onClick={handleLinkClick}
                       >
                         <LogIn className="h-5 w-5" />
-                        Login
+                        Acceder
                       </Link>
                     </div>
                   </ProductNav>
@@ -226,14 +229,11 @@ export function NavSidebar({
                       className="bg-gradient-to-t from-primary/70 to-primary/80 rounded-lg"
                     >
                       <div className="p-[1px] bg-background rounded-md">
-                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-primary" />
-                        <DropdownMenuItem>Settings</DropdownMenuItem>
-                        <DropdownMenuItem>Support</DropdownMenuItem>
+                        <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
                         <DropdownMenuSeparator className="bg-primary" />
                         <DropdownMenuItem asChild>
                           <Button className="w-full" onClick={handleLogout}>
-                            <LogOutIcon className="mr-1 size-4" /> Logout
+                            <LogOutIcon className="mr-1 size-4" /> Cerrar sesión
                           </Button>
                         </DropdownMenuItem>
                       </div>
@@ -275,7 +275,7 @@ function ProductNav({
         {categories && categories?.length > 0 && (
           <div className="flex items-center gap-2 mt-6 text-muted-foreground">
             <BoxIcon className="size-5 stroke-yellow-400" />
-            <p className="text-sm md:hidden">Categories</p>
+            <p className="text-sm md:hidden">Categorías</p>
           </div>
         )}
         <ul className="mt-2 w-36 flex flex-col gap-2 items-start justify-center py-2">
@@ -337,7 +337,7 @@ function ProductNav({
         {labels && labels?.length > 0 && (
           <div className="flex items-center gap-2 mt-6 text-muted-foreground">
             <Hash className="size-5 stroke-cyan-400" />
-            <p className="text-sm md:hidden">Labels</p>
+            <p className="text-sm md:hidden">Etiquetas</p>
           </div>
         )}
         <ul className="mt-2 w-36 flex flex-col gap-2 items-start justify-center py-2">
@@ -388,63 +388,7 @@ function AdminNav({ pathname }: { pathname: string }) {
             <span className="md:sr-only">Overview</span>
           </Link>
         </TooltipTrigger>
-        <TooltipContent side="right">Dashboard</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Link
-            href="/admin/products"
-            className={cn(
-              "flex gap-2 md:gap-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-              {
-                "bg-accent text-accent-foreground":
-                  pathname === "/admin/products",
-              }
-            )}
-            prefetch={false}
-          >
-            <FolderOpenIcon className="h-5 w-5" />
-            <span className="md:sr-only">Products</span>
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="right">Products</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Link
-            href="/admin/users"
-            className={cn(
-              "flex gap-2 md:gap-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-              {
-                "bg-accent text-accent-foreground": pathname === "/admin/users",
-              }
-            )}
-            prefetch={false}
-          >
-            <UsersIcon className="h-5 w-5" />
-            <span className="md:sr-only">Users</span>
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="right">Users</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Link
-            href="/admin/filters"
-            className={cn(
-              "flex gap-2 md:gap-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-              {
-                "bg-accent text-accent-foreground":
-                  pathname === "/admin/filters",
-              }
-            )}
-            prefetch={false}
-          >
-            <FilterIcon className="h-5 w-5" />
-            <span className="md:sr-only">Filters</span>
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="right">Filters</TooltipContent>
+        <TooltipContent side="right">Panel</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   )

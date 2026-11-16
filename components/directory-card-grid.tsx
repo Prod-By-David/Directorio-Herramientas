@@ -4,28 +4,10 @@ import React, { Suspense } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
+import type { PublicProduct as Product } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 import { ResourceCard } from "./directory-product-card"
-
-interface Product {
-  id: string
-  created_at: string
-  full_name: string
-  email: string
-  twitter_handle: string
-  product_website: string
-  codename: string
-  punchline: string
-  description: string
-  logo_src: string
-  user_id: string
-  tags: string[]
-  view_count: number
-  approved: boolean
-  labels: string[]
-  categories: string
-}
 
 export interface SEOCardGridProps {
   sortedData: Product[]
@@ -59,7 +41,7 @@ export const ResourceCardGrid: React.FC<SEOCardGridProps> = ({
             : "bg-white dark:bg-[#1E1E1E] rounded-[2rem] shadow-[0_0_0_1px_rgba(0,0,0,0.1)_inset,0_0.5px_0.5px_rgba(0,0,0,0.05)_inset,0_-0.5px_0.5px_rgba(0,0,0,0.05)_inset,0_1px_2px_rgba(0,0,0,0.1)] dark:shadow-[0_0_0_0.5px_rgba(255,255,255,0.06)_inset,0_0.5px_0.5px_rgba(255,255,255,0.1)_inset,0_-0.5px_0.5px_rgba(255,255,255,0.1)_inset,0_0.5px_1px_rgba(0,0,0,0.3),0_1px_2px_rgba(0,0,0,0.4)]"
         )}
       >
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div>Cargando...</div>}>
           <div className="relative">
             <TailwindMasonryGrid filteredData={sortedData} />
           </div>
@@ -111,79 +93,25 @@ export const FeaturedGrid: React.FC<{ featuredData: Product[] }> = ({
   )
 }
 
+// Sin destacados vigentes: invitación a destacar (sin anuncios de terceros)
 export const EmptyFeaturedGrid = () => {
-  const emptyData = [
-    {
-      id: "placeholder-1",
-      codename: "Join the cult",
-      punchline: "Next.js, Supabase & Tailwind Starters",
-      product_website: "https://newcult.co",
-      description:
-        "Check out newcult.co for the premium version of this template",
-      logo_src: "/ad-placeholder-metrics.png",
-      tags: ["featured"],
-      labels: ["featured-ad"],
-      created_at: new Date().toISOString(),
-      full_name: "New Cult",
-      email: "",
-      twitter_handle: "",
-      user_id: "",
-      view_count: 0,
-      approved: true,
-      categories: "Template",
-    },
-    {
-      id: "placeholder-2",
-      codename: "To get Admin Dashboard",
-      product_website: "https://newcult.co",
-      punchline: "Next.js, Supabase & Tailwind Starters",
-      description:
-        "Join the cult and get access to the admin dashboard for this template.",
-      logo_src: "/ad-placeholder-1.png",
-      tags: ["featured"],
-      labels: ["featured-ad"],
-      created_at: new Date().toISOString(),
-      full_name: "New Cult",
-      email: "",
-      twitter_handle: "",
-      user_id: "",
-      view_count: 0,
-      approved: true,
-      categories: "Template",
-    },
-    {
-      id: "placeholder-3",
-      codename: "And AI scripts",
-      product_website: "https://newcult.co",
-      punchline: "Next.js, Supabase & Tailwind Starters",
-      description:
-        "Includes AI scripts to quickly add new products to your directory.",
-      logo_src: "/ad-placeholder-tags.png",
-      tags: ["featured"],
-      labels: ["featured-ad"],
-      created_at: new Date().toISOString(),
-      full_name: "New Cult",
-      email: "",
-      twitter_handle: "",
-      user_id: "",
-      view_count: 0,
-      approved: true,
-      categories: "Template",
-    },
-  ]
-
   return (
-    <div className="w-full mx-auto max-w-7xl bg-black/20 dark:bg-neutral-950/40 border border-dashed border-black/10 py-3 px-3 rounded-[1.9rem]">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {emptyData.map((data, index) => (
-          <div
-            key={`featured-empty-${index}-${data.codename}`}
-            onClick={() => window.open("https://newcult.co", "_blank")}
-            className="md:py-0 cursor-pointer group relative break-inside-avoid w-full"
-          >
-            <ResourceCard trim={true} data={data as Product} order={index} />
-          </div>
-        ))}
+    <div className="w-full mx-auto max-w-7xl bg-black/20 dark:bg-neutral-950/40 border border-dashed border-black/10 py-8 px-6 rounded-[1.9rem]">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <p className="text-2xl font-bold tracking-tight">
+          Tu herramienta puede aparecer aquí
+        </p>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Las herramientas destacadas ocupan las primeras posiciones del
+          directorio. Envía la tuya gratis y destácala desde 99 € (7 días de
+          prueba gratis).
+        </p>
+        <Link
+          href="/submit"
+          className="mt-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow"
+        >
+          Enviar mi herramienta
+        </Link>
       </div>
     </div>
   )

@@ -13,10 +13,16 @@ import MinimalCard, {
   MinimalCardImage,
   MinimalCardTitle,
 } from "@/components/cult/minimal-card"
-import { incrementClickCount } from "@/app/actions/product"
+import { incrementClickCount } from "@/app/actions/views"
+import { isFeaturedActive } from "@/lib/featured"
+import type { PublicProduct as Product } from "@/lib/types"
 
 export const getBasePath = (url: string) => {
-  return new URL(url).hostname.replace("www.", "").split(".")[0]
+  try {
+    return new URL(url).hostname.replace("www.", "").split(".")[0]
+  } catch {
+    return ""
+  }
 }
 
 export const getLastPathSegment = (url: string, maxLength: number): string => {
@@ -34,25 +40,6 @@ export const getLastPathSegment = (url: string, maxLength: number): string => {
     console.error("Invalid URL:", error)
     return ""
   }
-}
-
-interface Product {
-  id: string
-  created_at: string
-  full_name: string
-  email: string
-  twitter_handle: string
-  product_website: string
-  codename: string
-  punchline: string
-  description: string
-  logo_src: string
-  user_id: string
-  tags: string[]
-  view_count: number
-  approved: boolean
-  labels: string[]
-  categories: string
 }
 
 export const ResourceCard: React.FC<{
@@ -87,7 +74,12 @@ export const ResourceCard: React.FC<{
         className=""
         onClick={handleClick}
       >
-        <div className="w-full">
+        <div className="w-full relative">
+          {isFeaturedActive(data) && (
+            <span className="absolute right-3 top-3 z-10 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow">
+              Destacada
+            </span>
+          )}
           <MinimalCard
             className={cn(
               optimisticResource.view_count > 350
