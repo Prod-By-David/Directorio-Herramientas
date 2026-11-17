@@ -35,7 +35,14 @@
 - `next.config.js`: `serverActions.allowedOrigins` y `allowedDevOrigins` para `*.app.github.dev`.
 - `.devcontainer/devcontainer.json` (Node 22, pnpm, puerto 3000, secrets sugeridos).
 - `NEXT_PUBLIC_SITE_URL` ahora es opcional; el checkout usa `x-forwarded-host` si está vacía.
-- Scripts: `pnpm verify`, `pnpm doctor` (entorno/migración/privacidad) y `pnpm test:webhook` (pagos simulados firmados, idempotencia, caducidad).
+- Scripts: `pnpm verify`, `pnpm check:env` (entorno/migración/privacidad) y `pnpm test:webhook` (pagos simulados firmados, idempotencia, caducidad).
+
+## Errores de tipos detectados en Codespaces (`pnpm verify`)
+- `@/assets/placeholder.png` sin tipos: `global.d.ts` referencia los tipos de imagen de Next (no depende de `next-env.d.ts`, que está en `.gitignore`).
+- `framer-motion` 11 no es compatible con los tipos de React 19 (`className` en `motion.div`/`motion.p`): la tarjeta usa elementos normales con una animación CSS (`.animate-card-in`).
+- `isRedirectError` ya no existe en Next 16: se eliminó el código muerto (`lib/error.ts`, `hooks/use-upload-file.ts`, `components/cult/fallback-image.tsx`, sin usos).
+- `pnpm doctor` ejecutaba el comando propio de pnpm: el script se renombró a `pnpm check:env`.
+- Los tests ya no muestran el aviso `MODULE_TYPELESS_PACKAGE_JSON`.
 
 ## Modo prueba
 - `lib/stripe.ts` rechaza `sk_live_` y el webhook ignora eventos live salvo `ALLOW_LIVE_PAYMENTS="true"`.

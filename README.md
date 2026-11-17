@@ -61,7 +61,7 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 | Comando | Qué hace |
 |---|---|
 | `pnpm verify` | Tests + chequeo de tipos + build |
-| `pnpm doctor` | Revisa variables, modo prueba de Stripe, migración aplicada, bucket y que email/user_id no sean públicos |
+| `pnpm check:env` | Revisa variables, modo prueba de Stripe, migración aplicada, bucket y que email/user_id no sean públicos |
 | `pnpm test:webhook` | Con el servidor en marcha, simula pagos firmados y comprueba activación, suma de días, idempotencia, firma inválida, eventos live ignorados y caducidad (crea y borra un producto temporal) |
 
 ## Problemas frecuentes

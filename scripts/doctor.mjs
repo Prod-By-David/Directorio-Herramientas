@@ -1,4 +1,4 @@
-// Diagnóstico del entorno (modo prueba). Uso: pnpm doctor
+// Diagnóstico del entorno (modo prueba). Uso: pnpm check:env
 // Lee .env.local si existe (y también las variables/secrets del entorno, p. ej. Codespaces).
 const results = []
 const ok = (name, detail = "") => results.push({ s: "OK", name, detail })
