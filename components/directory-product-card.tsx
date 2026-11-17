@@ -2,7 +2,6 @@
 
 import { useOptimistic } from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
 import { PersonStanding, Tag, View } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -61,12 +60,9 @@ export const ResourceCard: React.FC<{
   }
 
   return (
-    <motion.div
+    <div
       key={`resource-card-${data.id}-${order}`}
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="group relative  break-inside-avoid w-full"
+      className="animate-card-in group relative  break-inside-avoid w-full"
     >
       <Link
         href={`/products/${data.id}`}
@@ -100,13 +96,9 @@ export const ResourceCard: React.FC<{
             >
               {data.codename.substring(0, 30)}
             </MinimalCardTitle>
-            <motion.p
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-xs leading-3 mb-2 text-neutral-500"
-            >
+            <p className="text-xs leading-3 mb-2 text-neutral-500">
               {getLastPathSegment(data.product_website, 10)}
-            </motion.p>
+            </p>
             <MinimalCardDescription
               className={cn(
                 "text-sm",
@@ -133,6 +125,6 @@ export const ResourceCard: React.FC<{
           </MinimalCard>
         </div>
       </Link>
-    </motion.div>
+    </div>
   )
 }

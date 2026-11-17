@@ -465,3 +465,26 @@ input:-webkit-autofill:active {
     animation: spin-scale 60s linear infinite;
   }
 }
+
+
+/* Entrada suave de las tarjetas del listado */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-in {
+  animation: card-in 0.3s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-card-in {
+    animation: none;
+  }
+}
