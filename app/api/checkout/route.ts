@@ -8,6 +8,16 @@ import { getPlan } from "@/lib/featured-plans"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+// URL pública de la app: variable de entorno si existe; si no, la de la petición
+// (detrás de un proxy como Codespaces, el host real llega en x-forwarded-host).
+function getOrigin(req: Request) {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "")
+  if (fromEnv) return fromEnv
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host")
+  const proto = req.headers.get("x-forwarded-proto") ?? "http"
+  return host ? `${proto}://${host}` : new URL(req.url).origin
+}
+
 const bodySchema = z.object({
   productId: z.string().uuid(),
   planId: z.string().min(1),
@@ -55,9 +65,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const origin =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-      new URL(req.url).origin
+    const origin = getOrigin(req)
     const metadata = { productId: product.id, planId: plan.id, userId: user.id }
     const isSub = plan.kind === "subscription"
 
