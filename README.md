@@ -43,6 +43,27 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 4. `ADMIN_EMAILS="tu@email.com"` (el email debe estar confirmado en Supabase) y un `CRON_SECRET` largo.
 5. `pnpm dev` y abre http://localhost:3000.
 
+## GitHub Codespaces (entorno de pruebas)
+
+1. Guarda las variables como **Codespaces secrets** (GitHub → Settings → Codespaces → Secrets, asociadas a este
+   repositorio; `.devcontainer/devcontainer.json` ya las sugiere) o créalas en `.env.local` dentro del Codespace.
+   Si cambias secrets, reconstruye/reinicia el Codespace; si editas `.env.local`, reinicia `pnpm dev`.
+2. Deja `NEXT_PUBLIC_SITE_URL` **vacía**: se detecta de la petición (`https://<codespace>-3000.app.github.dev`).
+3. En Supabase → Authentication → URL Configuration, añade esa URL (con `/**`) a *Redirect URLs*.
+4. `pnpm dev` y abre el puerto 3000 desde la pestaña **Puertos**. `next.config.js` ya permite los orígenes
+   `*.app.github.dev` (sin ello, el login y el envío fallan con "Invalid Server Actions request").
+5. Webhook en Codespaces: con la Stripe CLI (`stripe listen --forward-to localhost:3000/api/webhooks/stripe`) no hace
+   falta tocar la visibilidad del puerto. Con un endpoint creado en el panel de Stripe (modo test) hay que poner el
+   puerto 3000 en **Público** y usar `https://<codespace>-3000.app.github.dev/api/webhooks/stripe`.
+
+### Comprobaciones automáticas
+
+| Comando | Qué hace |
+|---|---|
+| `pnpm verify` | Tests + chequeo de tipos + build |
+| `pnpm doctor` | Revisa variables, modo prueba de Stripe, migración aplicada, bucket y que email/user_id no sean públicos |
+| `pnpm test:webhook` | Con el servidor en marcha, simula pagos firmados y comprueba activación, suma de días, idempotencia, firma inválida, eventos live ignorados y caducidad (crea y borra un producto temporal) |
+
 ## Problemas frecuentes
 
 - **"Your project's URL and Key are required to create a Supabase client"** (o pantalla "Falta configurar el

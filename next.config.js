@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // GitHub Codespaces sirve la app por un dominio *.app.github.dev: sin esto, Next bloquea
+  // las acciones de servidor (login/envío) por "x-forwarded-host" distinto de "origin".
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "*.app.github.dev"],
+    },
+  },
+  allowedDevOrigins: ["*.app.github.dev"],
   images: {
     remotePatterns: [
       // {
