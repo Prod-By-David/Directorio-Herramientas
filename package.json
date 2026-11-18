@@ -16,7 +16,8 @@
     "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/**/*.test.ts\"",
     "verify": "pnpm test && pnpm check-types && pnpm build",
     "test:webhook": "node --env-file-if-exists=.env.local scripts/test-webhook.mjs",
-    "check:env": "node --env-file-if-exists=.env.local scripts/doctor.mjs"
+    "check:env": "node --env-file-if-exists=.env.local scripts/doctor.mjs",
+    "test:security": "node --env-file-if-exists=.env.local scripts/test-security.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.18",
