@@ -44,6 +44,19 @@
 - `pnpm doctor` ejecutaba el comando propio de pnpm: el script se renombró a `pnpm check:env`.
 - Los tests ya no muestran el aviso `MODULE_TYPELESS_PACKAGE_JSON`.
 
+## Segunda ronda en Codespaces
+- El aviso "script tag" persistía en `app/layout.tsx`: el script de tema ya no es un elemento `<script>` de React; se inyecta como HTML (`innerHTML`) en el layout y lo ejecuta el navegador al parsear. El aviso también aparece como efecto secundario de un error de render del servidor.
+- Supabase: `NEXT_PUBLIC_SUPABASE_URL` se valida (con `https://`) y se limpian comillas/espacios; la pantalla de configuración y `pnpm check:env` indican el problema concreto.
+
+## Revisión profunda (todo el código)
+- `middleware.ts` -> `proxy.ts` (convención de Next 16).
+- Migración: `user_id` queda legible con la anon key (UUID opaco) para que la política del dueño no dependa de privilegios de columna; email y nombre siguen ocultos.
+- Tarjeta: `useOptimistic` ahora se actualiza dentro de una transición (evita el aviso de React).
+- Menú: enlaces de categoría/tag/etiqueta codificados (`encodeURIComponent`), refresco al cerrar sesión, textos en español.
+- Búsqueda: se sanean también las comillas dobles del filtro de PostgREST.
+- Login: `id`/`autocomplete` correctos en los campos (accesibilidad y gestores de contraseñas).
+- Scripts: `check:env` y `test:webhook` compatibles con las claves nuevas de Supabase (`sb_publishable_`/`sb_secret_`); `TEST_USER_ID` opcional.
+
 ## Modo prueba
 - `lib/stripe.ts` rechaza `sk_live_` y el webhook ignora eventos live salvo `ALLOW_LIVE_PAYMENTS="true"`.
 
@@ -51,3 +64,6 @@
 - No se pudo ejecutar `pnpm install`, `next build`, el chequeo de tipos ni la migración (sin red ni Postgres): se comprobó la sintaxis de todos los TS/TSX y se ejecutaron los tests unitarios.
 - Imagen Open Graph propia (se eliminaron las capturas de la plantilla).
 - Licencia de NewCult (`LICENSE.md`): confirmar con el responsable.
+
+## Nota sobre la migración
+- `20261116120000_featured_security_fixes.sql` es re-ejecutable (todas las políticas se borran antes de crearse). Las migraciones anteriores no se modifican ni se vuelven a ejecutar.

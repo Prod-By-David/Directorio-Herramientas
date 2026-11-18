@@ -61,7 +61,7 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 | Comando | Qué hace |
 |---|---|
 | `pnpm verify` | Tests + chequeo de tipos + build |
-| `pnpm check:env` | Revisa variables, modo prueba de Stripe, migración aplicada, bucket y que email/user_id no sean públicos |
+| `pnpm check:env` | Revisa variables, modo prueba de Stripe, migración aplicada, bucket y que el email no sea público |
 | `pnpm test:webhook` | Con el servidor en marcha, simula pagos firmados y comprueba activación, suma de días, idempotencia, firma inválida, eventos live ignorados y caducidad (crea y borra un producto temporal) |
 
 ## Problemas frecuentes
@@ -70,8 +70,13 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
   entorno"): falta `.env.local` o las variables `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
   Copia `.env.example` a `.env.local`, rellénalas (Supabase → Project Settings → API) y **reinicia** `pnpm dev`
   (las variables solo se leen al arrancar).
-- **"Encountered a script tag while rendering React component"**: lo causaba `next-themes` con React 19.
-  Se sustituyó por un proveedor de tema propio (`app/providers.tsx`) con el script en el layout (`lib/theme-script.ts`).
+- **"Encountered a script tag while rendering React component"**: lo causaba `next-themes` con React 19 y también
+  aparece como efecto secundario cuando el servidor falla al renderizar (p. ej. por un error de Supabase): corrige
+  primero ese error. El tema usa un proveedor propio (`app/providers.tsx`) y el script anti-parpadeo
+  (`lib/theme-script.ts`) se inyecta como HTML en el layout, sin elemento `<script>` de React.
+- **"Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL"**: `NEXT_PUBLIC_SUPABASE_URL` no tiene la forma
+  `https://<id-del-proyecto>.supabase.co` (falta `https://`, es solo el id, o se pegó otra cosa). `pnpm check:env`
+  lo detecta.
 - Al actualizar desde un zip anterior, extrae en una **carpeta nueva** (o borra la anterior): extraer encima deja
   archivos eliminados, como las capturas de la plantilla de `app/*-image.png`.
 
