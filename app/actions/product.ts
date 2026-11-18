@@ -39,7 +39,7 @@ export const getProducts = cache(
       .eq("approved", true) // solo aprobados en el listado público
 
     // Se limpian los caracteres con significado en la sintaxis de filtros de PostgREST
-    const term = searchTerm?.replace(/[,()%*\\]/g, " ").trim()
+    const term = searchTerm?.replace(/[,()%*\\"]/g, " ").trim()
     if (term) {
       query = query.or(
         `codename.ilike.%${term}%,description.ilike.%${term}%,punchline.ilike.%${term}%`

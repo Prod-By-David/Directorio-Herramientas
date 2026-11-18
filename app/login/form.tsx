@@ -95,13 +95,22 @@ export function LoginForm() {
             <CardContent>
               <form className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input type="email" name="email" placeholder="tu@email.com" required />
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    placeholder="tu@email.com"
+                    required
+                  />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Contraseña</Label>
+                  <Label htmlFor="login-password">Contraseña</Label>
                   <Input
+                    id="login-password"
                     type="password"
+                    autoComplete="current-password"
                     required
                     name="password"
                     placeholder="••••••••"
@@ -134,13 +143,22 @@ export function LoginForm() {
               {/* <form className="animate-in flex-1 flex flex-col w-full justify-center gap-2 text-foreground"> */}
               <form className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input type="email" name="email" placeholder="tu@email.com" required />
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    placeholder="tu@email.com"
+                    required
+                  />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Contraseña</Label>
+                  <Label htmlFor="signup-password">Contraseña</Label>
                   <Input
+                    id="signup-password"
                     type="password"
+                    autoComplete="new-password"
                     required
                     name="password"
                     placeholder="••••••••"

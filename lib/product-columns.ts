@@ -1,6 +1,6 @@
 /**
  * Columnas públicas de `products`. Deben coincidir con el GRANT SELECT por
- * columnas de la migración 20261116120000 (email, full_name, user_id y datos de
+ * columnas de la migración 20261116120000 (email, full_name y datos de
  * Stripe NO son legibles con la anon key). Nunca usar select("*") desde el
  * cliente de usuario.
  */

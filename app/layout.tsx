@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 
-import { isSupabaseConfigured } from "@/db/supabase/env"
+import { getSupabaseEnvProblem } from "@/db/supabase/env"
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script"
 import { SetupRequired } from "@/components/setup-required"
 import { Toaster } from "@/components/ui/sonner"
@@ -33,22 +33,33 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const envProblem = getSupabaseEnvProblem()
+
   return (
     <html
       lang="es"
       className={`${fontSans.variable} font-sans  `}
       suppressHydrationWarning
     >
-      <head>
-        {/* Script de tema en el servidor: evita el aviso de React 19 por <script> en el cliente */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
       <body>
+        {/*
+          Script anti-parpadeo del tema. Se inyecta como HTML (innerHTML) y NO como elemento
+          <script> de React: el navegador lo ejecuta al parsear el HTML del servidor, y React
+          nunca crea un <script> en el cliente (lo que provoca el aviso
+          "Encountered a script tag while rendering React component").
+        */}
+        <div
+          hidden
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `<script>${THEME_INIT_SCRIPT}</script>`,
+          }}
+        />
         <ThemeProvider defaultTheme="system">
           <TooltipProvider>
             <main className="bg-[#FAFAFA] dark:bg-background  text-foreground flex flex-col justify-center items-center w-full pt-13">
               <div className=" w-full ">
-                {isSupabaseConfigured() ? children : <SetupRequired />}
+                {envProblem ? <SetupRequired problem={envProblem} /> : children}
               </div>
             </main>
           </TooltipProvider>

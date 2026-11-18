@@ -43,21 +43,34 @@ if (env.CODESPACE_NAME) {
 }
 
 // 4) Supabase
-const url = env.NEXT_PUBLIC_SUPABASE_URL
-const anon = env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const service = env.SUPABASE_SERVICE_ROLE_KEY
+const clean = (v) => (v ?? "").trim().replace(/^["']+|["']+$/g, "")
+const url = clean(env.NEXT_PUBLIC_SUPABASE_URL).replace(/\/$/, "")
+const anon = clean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+const service = clean(env.SUPABASE_SERVICE_ROLE_KEY)
+
+let urlOk = false
+try {
+  urlOk = /^https?:$/.test(new URL(url).protocol)
+} catch {}
+if (url && !urlOk)
+  fail("NEXT_PUBLIC_SUPABASE_URL", `no es una URL válida (empieza por "${url.slice(0, 14)}…"); debe ser https://<id>.supabase.co`)
 
 async function rest(path, key, init = {}) {
   const res = await fetch(`${url}${path}`, {
     ...init,
-    headers: { apikey: key, Authorization: `Bearer ${key}`, ...(init.headers ?? {}) },
+    // Las claves nuevas (sb_publishable_/sb_secret_) no son JWT: solo van en la cabecera apikey
+    headers: {
+      apikey: key,
+      ...(key.startsWith("eyJ") ? { Authorization: `Bearer ${key}` } : {}),
+      ...(init.headers ?? {}),
+    },
   })
   let body = null
   try { body = await res.json() } catch {}
   return { status: res.status, body }
 }
 
-if (url && anon && service) {
+if (urlOk && anon && service) {
   try {
     const cols = await rest(
       "/rest/v1/products?select=id,featured,featured_until,trial_used,rejected_at,stripe_subscription_id&limit=1",
@@ -75,9 +88,9 @@ if (url && anon && service) {
     else warn("Categorías", `sin datos o sin acceso público (HTTP ${cats.status})`)
 
     // Privacidad: con la anon key NO deben leerse email ni user_id
-    const priv = await rest("/rest/v1/products?select=email,user_id&limit=1", anon)
-    if (priv.status === 200) fail("Privacidad", "la anon key puede leer email/user_id de products (falta el GRANT por columnas)")
-    else ok("Privacidad", `email y user_id no son legibles con la anon key (HTTP ${priv.status})`)
+    const priv = await rest("/rest/v1/products?select=email&limit=1", anon)
+    if (priv.status === 200) fail("Privacidad", "la anon key puede leer el email de products (falta el GRANT por columnas)")
+    else ok("Privacidad", `el email no es legible con la anon key (HTTP ${priv.status})`)
 
     const pub = await rest("/rest/v1/products?select=id,codename,featured,featured_until&limit=1", anon)
     if (pub.status === 200) ok("Lectura pública de productos aprobados")

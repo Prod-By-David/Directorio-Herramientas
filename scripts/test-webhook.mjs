@@ -8,8 +8,13 @@ const { NEXT_PUBLIC_SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: serviceKey } =
 const secret = process.env.STRIPE_WEBHOOK_SECRET
 const base = (process.env.TEST_BASE_URL || "http://localhost:3000").replace(/\/$/, "")
 
-if (!url || !serviceKey || !secret) {
-  console.error("Faltan NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY o STRIPE_WEBHOOK_SECRET")
+const missingVars = [
+  ["NEXT_PUBLIC_SUPABASE_URL", url],
+  ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
+  ["STRIPE_WEBHOOK_SECRET", secret],
+].filter(([, v]) => !v).map(([k]) => k)
+if (missingVars.length) {
+  console.error(`Faltan variables en .env.local: ${missingVars.join(", ")}  (ejecuta antes: pnpm check:env)`)
   process.exit(1)
 }
 if ((process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_live_")) {
@@ -61,15 +66,22 @@ const getProduct = async (id) =>
   (await db.from("products").select("featured, featured_until").eq("id", id).single()).data
 
 // --- preparación: producto aprobado de prueba ---
-const { data: usersData } = await db.auth.admin.listUsers({ page: 1, perPage: 1 })
-const user = usersData?.users?.[0]
-if (!user) { console.error("No hay usuarios: regístrate en /login primero"); process.exit(1) }
+let userId = process.env.TEST_USER_ID
+if (!userId) {
+  const { data: usersData, error: usersErr } = await db.auth.admin.listUsers({ page: 1, perPage: 1 })
+  userId = usersData?.users?.[0]?.id
+  if (!userId) {
+    console.error(usersErr ? `No se pudo listar usuarios (${usersErr.message}).` : "No hay usuarios: regístrate en /login primero.")
+    console.error("Alternativa: define TEST_USER_ID con el id de un usuario (Supabase > Authentication > Users).")
+    process.exit(1)
+  }
+}
 
 const { data: product, error: insErr } = await db.from("products").insert({
   full_name: "Prueba webhook", email: "webhook-test@example.com", twitter_handle: "@test",
   product_website: "https://example.com", codename: `test-webhook-${stamp}`, punchline: "Prueba",
   description: "Producto temporal de prueba (se borra al terminar)", logo_src: "", categories: "ai-tools",
-  user_id: user.id, approved: true, tags: [], labels: ["unlabeled"],
+  user_id: userId, approved: true, tags: [], labels: ["unlabeled"],
 }).select("id").single()
 if (insErr || !product) { console.error("No se pudo crear el producto de prueba:", insErr?.message); process.exit(1) }
 const productId = product.id
