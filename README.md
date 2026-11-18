@@ -89,6 +89,18 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
   `pnpm-lock.yaml` actualizado, cambia `--no-frozen-lockfile` por `--frozen-lockfile`.
 - Nunca subas claves de Stripe/Supabase; en Vercel/GitHub se configuran como variables de entorno o secrets.
 
+## Guía rápida paso a paso (Codespaces)
+
+1. Edita `.env.local` (en la raíz del proyecto): `ADMIN_EMAILS` = tu email, `CRON_SECRET` = salida de `openssl rand -hex 32`,
+   claves de Supabase y de Stripe **de pruebas**, `NEXT_PUBLIC_SITE_URL=""`.
+2. Supabase (proyecto de pruebas): ejecuta en el SQL Editor **solo** `supabase/migrations/20261116120000_featured_security_fixes.sql`
+   (es re-ejecutable; las migraciones anteriores ya aplicadas no se repiten). En Authentication → Email, desactiva *Confirm email*
+   mientras pruebas.
+3. `pnpm install` → `pnpm verify` (tests, tipos y build).
+4. `pnpm dev`, abre el puerto 3000 y crea tu cuenta en `/login` con el email de `ADMIN_EMAILS`.
+5. `pnpm check:env` (todo en OK) y, con el servidor en marcha, `pnpm test:webhook`.
+6. En el navegador: envía una herramienta en `/submit` → apruébala en `/admin` → en su ficha, "Probar 7 días gratis".
+
 ## Lista de pruebas (Fase 4)
 
 Tarjeta de prueba de Stripe: `4242 4242 4242 4242`, cualquier fecha futura y cualquier CVC.

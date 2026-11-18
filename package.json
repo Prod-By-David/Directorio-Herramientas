@@ -4,7 +4,7 @@
   "private": true,
   "description": "Directorio de herramientas de IA y software con listados destacados de pago (Stripe) - Next.js + Supabase",
   "engines": {
-    "node": ">=22.18"
+    "node": ">=20.9"
   },
   "scripts": {
     "dev": "next dev",
@@ -13,7 +13,7 @@
     "check-types": "tsc --noEmit",
     "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
     "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/**/*.test.ts\"",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/**/*.test.ts\"",
     "verify": "pnpm test && pnpm check-types && pnpm build",
     "test:webhook": "node --env-file-if-exists=.env.local scripts/test-webhook.mjs",
     "check:env": "node --env-file-if-exists=.env.local scripts/doctor.mjs"

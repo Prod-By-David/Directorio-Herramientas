@@ -67,3 +67,6 @@
 
 ## Nota sobre la migración
 - `20261116120000_featured_security_fixes.sql` es re-ejecutable (todas las políticas se borran antes de crearse). Las migraciones anteriores no se modifican ni se vuelven a ejecutar.
+
+## Node 22.16 en Codespaces
+- `engines` pasa a `>=20.9` (requisito real de Next 16) y `pnpm test` usa `--experimental-strip-types`, necesario en Node 22.6-22.17 (en 22.18+ es el comportamiento por defecto).
