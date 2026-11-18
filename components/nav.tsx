@@ -60,6 +60,7 @@ export function NavSidebar({
       console.error("Error logging out:", error.message)
     } else {
       router.push("/login")
+      router.refresh()
     }
   }
 
@@ -282,7 +283,7 @@ function ProductNav({
           {categories?.map((category: string, index: number) => (
             <li key={`category-${index}-${category}`}>
               <Link
-                href={`/products?category=${category}`}
+                href={`/products?category=${encodeURIComponent(category)}`}
                 onClick={handleLinkClick}
                 className={cn(
                   "flex items-start space-x-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 rounded-md px-2 py-0.5",
@@ -313,7 +314,7 @@ function ProductNav({
           {tags?.map((tag: string, index: number) => (
             <li key={`tag-${index}-${tag}`}>
               <Link
-                href={`/products?tag=${tag}`}
+                href={`/products?tag=${encodeURIComponent(tag)}`}
                 onClick={handleLinkClick}
                 className={cn(
                   "flex items-start space-x-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 rounded-md px-2 py-0.5",
@@ -344,7 +345,7 @@ function ProductNav({
           {labels?.map((label: string, index: number) => (
             <li key={`label-${index}-${label}`}>
               <Link
-                href={`/products?label=${label}`}
+                href={`/products?label=${encodeURIComponent(label)}`}
                 onClick={handleLinkClick}
                 className={cn(
                   "flex items-start space-x-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 rounded-md px-2 py-0.5",
@@ -385,7 +386,7 @@ function AdminNav({ pathname }: { pathname: string }) {
             prefetch={false}
           >
             <BarChartIcon className="h-5 w-5" />
-            <span className="md:sr-only">Overview</span>
+            <span className="md:sr-only">Resumen</span>
           </Link>
         </TooltipTrigger>
         <TooltipContent side="right">Panel</TooltipContent>

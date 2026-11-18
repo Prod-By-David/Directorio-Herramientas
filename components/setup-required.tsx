@@ -1,5 +1,5 @@
 // Se muestra cuando faltan las variables de Supabase (p. ej. primer arranque tras clonar el repo).
-export function SetupRequired() {
+export function SetupRequired({ problem }: { problem?: string }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-4 px-6 py-12">
       <h1 className="text-3xl font-extrabold tracking-tight">
@@ -9,6 +9,11 @@ export function SetupRequired() {
         La aplicación necesita las claves de Supabase para arrancar. Sigue estos
         pasos (modo prueba):
       </p>
+      {problem && (
+        <p className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm">
+          <strong>Problema detectado:</strong> {problem}
+        </p>
+      )}
       <ol className="list-decimal space-y-2 pl-6">
         <li>
           Copia <code className="rounded bg-muted px-1">.env.example</code> a{" "}

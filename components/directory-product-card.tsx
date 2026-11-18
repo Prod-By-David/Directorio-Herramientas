@@ -1,6 +1,6 @@
 "use client"
 
-import { useOptimistic } from "react"
+import { startTransition, useOptimistic } from "react"
 import Link from "next/link"
 import { PersonStanding, Tag, View } from "lucide-react"
 
@@ -55,8 +55,10 @@ export const ResourceCard: React.FC<{
 
   const handleClick = () => {
     const newClickCount = (optimisticResource.view_count || 0) + 1
-    addOptimisticUpdate({ view_count: newClickCount })
-    incrementClickCount(data.id)
+    startTransition(async () => {
+      addOptimisticUpdate({ view_count: newClickCount })
+      await incrementClickCount(data.id)
+    })
   }
 
   return (

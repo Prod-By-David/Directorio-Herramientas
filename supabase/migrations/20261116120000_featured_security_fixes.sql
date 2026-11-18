@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Destacados con caducidad + seguridad (moderación, RLS, storage, privacidad)
--- Ejecutar DESPUÉS de las migraciones anteriores. Probar primero en un proyecto
--- Supabase de pruebas.
+-- Ejecutar DESPUÉS de las migraciones anteriores (que NO se tocan). Es re-ejecutable:
+-- si se lanza dos veces, la segunda no falla. Probar primero en un proyecto de pruebas.
 -- ============================================================================
 
 -- 1) Columnas nuevas ---------------------------------------------------------
@@ -24,6 +24,12 @@ drop policy if exists "Can view own products" on public.products;
 drop policy if exists "Can insert own products" on public.products;
 drop policy if exists "Can update own products" on public.products;
 drop policy if exists "Can delete own products" on public.products;
+
+-- (Re-ejecutable: se borran también las políticas propias de esta migración antes de crearlas.)
+drop policy if exists "View approved or own products" on public.products;
+drop policy if exists "Insert own pending products" on public.products;
+drop policy if exists "Update own products" on public.products;
+drop policy if exists "Delete own products" on public.products;
 
 -- Público: solo aprobados. Dueño: también los suyos pendientes.
 create policy "View approved or own products" on public.products
@@ -87,11 +93,12 @@ create trigger trg_protect_product_admin_columns
   before update on public.products
   for each row execute function public.protect_product_admin_columns();
 
--- 3) Privacidad: email, nombre, user_id y datos de Stripe NO legibles con la anon key.
+-- 3) Privacidad: email, nombre y datos de Stripe NO legibles con la anon key.
+--    user_id (UUID opaco, sin datos personales) sí se concede: la política del dueño lo usa.
 --    (Cualquier columna futura que deba ser pública hay que añadirla a este GRANT.)
 revoke select on public.products from anon, authenticated;
 grant select (
-  id, created_at, twitter_handle, product_website, codename, punchline,
+  id, created_at, user_id, twitter_handle, product_website, codename, punchline,
   description, logo_src, tags, labels, categories, view_count, approved,
   featured, featured_until
 ) on public.products to anon, authenticated;
