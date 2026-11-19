@@ -13,8 +13,10 @@ export const dynamic = "force-dynamic"
 function getOrigin(req: Request) {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "")
   if (fromEnv) return fromEnv
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host")
-  const proto = req.headers.get("x-forwarded-proto") ?? "http"
+  // Tras varios proxies estas cabeceras pueden venir como lista "a, b": se usa el primer valor
+  const first = (v: string | null) => v?.split(",")[0]?.trim() || null
+  const host = first(req.headers.get("x-forwarded-host")) ?? first(req.headers.get("host"))
+  const proto = first(req.headers.get("x-forwarded-proto")) ?? "http"
   return host ? `${proto}://${host}` : new URL(req.url).origin
 }
 
@@ -71,6 +73,7 @@ export async function POST(req: Request) {
 
     const session = await getStripe().checkout.sessions.create({
       mode: isSub ? "subscription" : "payment",
+      locale: "es",
       customer_email: user.email ?? undefined,
       line_items: [
         {
@@ -97,10 +100,20 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ url: session.url })
-  } catch (error) {
-    console.error("Stripe Checkout Error:", error)
+  } catch (error: any) {
+    console.error("Stripe Checkout Error:", {
+      type: error?.type,
+      code: error?.code,
+      param: error?.param,
+      message: error?.message,
+    })
+    // En modo prueba se devuelve el motivo real para poder corregirlo; en modo real, solo un mensaje genérico.
+    const testMode = (process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_test_")
     return NextResponse.json(
-      { error: "No se pudo iniciar el pago" },
+      {
+        error: "No se pudo iniciar el pago",
+        ...(testMode && error?.message ? { detail: String(error.message) } : {}),
+      },
       { status: 500 }
     )
   }

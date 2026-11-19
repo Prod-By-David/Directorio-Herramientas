@@ -61,7 +61,11 @@ export const ProductDetails = ({
         window.location.href = data.url // Redirige a Stripe Checkout
         return
       }
-      toast.error(data.error || "No se pudo iniciar el pago")
+      toast.error(
+        data.detail
+          ? `${data.error}: ${data.detail}`
+          : data.error || "No se pudo iniciar el pago"
+      )
     } catch (error) {
       console.error("Error:", error)
       toast.error("Error de conexión con la pasarela de pagos")

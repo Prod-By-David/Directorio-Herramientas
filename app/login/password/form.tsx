@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -46,6 +47,9 @@ export const ChangePassword: FC = () => {
       <DialogContent className="h-[260px] w-[400px] p-4">
         <DialogHeader>
           <DialogTitle>Cambiar contraseña</DialogTitle>
+          <DialogDescription>
+            Elige una contraseña nueva (mínimo 8 caracteres).
+          </DialogDescription>
         </DialogHeader>
 
         <Input
