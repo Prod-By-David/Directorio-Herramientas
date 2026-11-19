@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import {
   Tooltip,
   TooltipContent,
@@ -165,6 +165,10 @@ export function NavSidebar({
               side="left"
               className="sm:max-w-[15rem] py-4 pl-1 border-r border-primary/10"
             >
+              <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
+              <SheetDescription className="sr-only">
+                Categorías, etiquetas y accesos del directorio
+              </SheetDescription>
               <nav className="flex flex-col items-start gap-4 px-2 py-5">
                 {pathname.includes("admin") ? (
                   <>

@@ -33,6 +33,7 @@ export function sortByRanking<T extends FeaturedFields & { created_at: string }>
 
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", {
+    timeZone: "UTC", // mismo resultado en servidor y navegador (evita desajustes de hidratación)
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
