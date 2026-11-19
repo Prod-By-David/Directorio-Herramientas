@@ -63,8 +63,16 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 | `pnpm verify` | Tests + chequeo de tipos + build |
 | `pnpm check:env` | Revisa variables, modo prueba de Stripe, migración aplicada, bucket y que el email no sea público |
 | `pnpm test:webhook` | Con el servidor en marcha, simula pagos firmados y comprueba activación, suma de días, idempotencia, firma inválida, eventos live ignorados y caducidad (crea y borra un producto temporal) |
+| `pnpm test:security` | Crea 2 usuarios temporales y comprueba la RLS real: no pueden auto-aprobarse ni auto-destacarse, no ven pendientes ajenas, el email no es legible, el contador y el storage por carpeta funcionan (lo borra todo al terminar) |
+| `pnpm test:stripe` | Sin servidor: valida la clave `sk_test_`, la cuenta de Stripe y que acepta crear sesiones de pago (pago único y suscripción). Si el pago falla en la web, el motivo real sale aquí |
 
 ## Problemas frecuentes
+
+- **Indicador rojo "N · X Issues" en desarrollo** (React 19): pulsa el indicador para ver el detalle. La causa típica era
+  "Accessing element.ref was removed in React 19", por librerías antiguas fijadas en `pnpm-lock.yaml` (Radix UI, framer-motion,
+  sonner, cmdk…). `package.json` exige ahora versiones compatibles: ejecuta `pnpm install` y sube el lockfile actualizado.
+  Los `Dialog`/`Sheet` de Radix necesitan `Title` (error) y `Description` (aviso).
+- **El pago no se inicia**: el toast muestra el motivo en modo prueba; `pnpm test:stripe` lo diagnostica sin la web.
 
 - **"Your project's URL and Key are required to create a Supabase client"** (o pantalla "Falta configurar el
   entorno"): falta `.env.local` o las variables `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.

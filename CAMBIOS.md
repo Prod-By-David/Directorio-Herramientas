@@ -70,3 +70,14 @@
 
 ## Node 22.16 en Codespaces
 - `engines` pasa a `>=20.9` (requisito real de Next 16) y `pnpm test` usa `--experimental-strip-types`, necesario en Node 22.6-22.17 (en 22.18+ es el comportamiento por defecto).
+
+## Verificado en Codespaces
+- `pnpm verify` (tests + tipos + build de Next 16), `pnpm check:env` (11/11) y `pnpm test:webhook` (9/9) pasan.
+- Nuevo `pnpm test:security`: prueba la seguridad de la migración con usuarios reales temporales.
+
+## Issues de desarrollo y pagos
+- Indicador "Issues": versiones antiguas de Radix UI, framer-motion, sonner, cmdk, react-hook-form y vaul fijadas en el lockfile (peer `react ^18`) acceden a `element.ref`, eliminado en React 19. `package.json` sube los mínimos; hay que ejecutar `pnpm install` para regenerar el lockfile.
+- `Sheet` del menú móvil y `Dialog` de cambio de contraseña: añadidos `Title`/`Description` (Radix los exige).
+- `formatDate` usa UTC: sin desajustes de hidratación entre servidor y navegador.
+- Checkout: origen tolerante a cabeceras `x-forwarded-*` en lista, `locale: "es"`, y en modo prueba el error real de Stripe llega al toast y a la terminal.
+- Nuevo `pnpm test:stripe` (clave, cuenta y sesiones de pago de prueba, sin servidor).
