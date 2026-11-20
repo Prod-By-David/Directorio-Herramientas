@@ -5,7 +5,8 @@ import Stripe from "stripe"
 import { createClient } from "@supabase/supabase-js"
 
 const { NEXT_PUBLIC_SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: serviceKey } = process.env
-const secret = process.env.STRIPE_WEBHOOK_SECRET
+const clean = (v) => (v ?? "").replace(/\s+/g, "").replace(/^["']+|["']+$/g, "")
+const secret = clean(process.env.STRIPE_WEBHOOK_SECRET)
 const base = (process.env.TEST_BASE_URL || "http://localhost:3000").replace(/\/$/, "")
 
 const missingVars = [
@@ -23,7 +24,7 @@ if ((process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_live_")) {
 }
 
 const db = createClient(url, serviceKey, { auth: { persistSession: false } })
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder")
+const stripe = new Stripe(clean(process.env.STRIPE_SECRET_KEY) || "sk_test_placeholder")
 const stamp = Date.now()
 const DAY = 86_400_000
 let failures = 0

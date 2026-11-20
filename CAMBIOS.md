@@ -81,3 +81,13 @@
 - Checkout: origen tolerante a cabeceras `x-forwarded-*` en lista, `locale: "es"`, y en modo prueba el error real de Stripe llega al toast y a la terminal.
 - Nuevo `pnpm test:stripe` (clave, cuenta y sesiones de pago de prueba, sin servidor).
 - Dependencias (Radix, framer-motion…): sin cambios; solo habría que subirlas si reaparecen avisos de `element.ref`.
+
+## Stripe CLI
+- Las versiones recientes de `stripe listen` exigen `--events` (o `--all-snapshot`). Los eventos que gestiona el webhook son: `checkout.session.completed,checkout.session.async_payment_succeeded,invoice.paid,customer.subscription.deleted`.
+
+## Controles de destacado en la ficha
+- Los planes de pago solo los ve el propietario (con sesión iniciada y herramienta aprobada). Si no se ven, la ficha ahora explica por qué: sin sesión, o sesión con otra cuenta (muestra el email).
+
+## Webhook 400 y Issues de Radix
+- Webhook: `STRIPE_WEBHOOK_SECRET` (y las claves de Stripe) se limpian de espacios, saltos de línea y comillas; `pnpm check:env` avisa si un valor contiene espacios.
+- Issues "element.ref": `package.json` sube `@radix-ui/*` y `cmdk` (versiones compatibles con React 19). Requiere `pnpm install`.

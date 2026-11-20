@@ -36,7 +36,8 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
    (el último es `20261116120000_featured_security_fixes.sql`). Rellena las 3 variables de Supabase.
 2. **Stripe (modo test)**: copia `sk_test_…` y `pk_test_…` a `.env.local`. Para el webhook en local:
    ```bash
-   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   stripe listen --events checkout.session.completed,checkout.session.async_payment_succeeded,invoice.paid,customer.subscription.deleted \
+     --forward-to localhost:3000/api/webhooks/stripe
    ```
    y copia el `whsec_…` que imprime a `STRIPE_WEBHOOK_SECRET`.
 3. (Opcional) `supabase/seed.sql` carga 6 herramientas de demostración (requiere haberte registrado antes).
@@ -52,7 +53,7 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 3. En Supabase → Authentication → URL Configuration, añade esa URL (con `/**`) a *Redirect URLs*.
 4. `pnpm dev` y abre el puerto 3000 desde la pestaña **Puertos**. `next.config.js` ya permite los orígenes
    `*.app.github.dev` (sin ello, el login y el envío fallan con "Invalid Server Actions request").
-5. Webhook en Codespaces: con la Stripe CLI (`stripe listen --forward-to localhost:3000/api/webhooks/stripe`) no hace
+5. Webhook en Codespaces: con la Stripe CLI (`stripe listen --events … --forward-to localhost:3000/api/webhooks/stripe`; las versiones nuevas de la CLI exigen indicar los eventos: los 4 que gestiona el webhook, ver más arriba) no hace
    falta tocar la visibilidad del puerto. Con un endpoint creado en el panel de Stripe (modo test) hay que poner el
    puerto 3000 en **Público** y usar `https://<codespace>-3000.app.github.dev/api/webhooks/stripe`.
 
@@ -68,10 +69,13 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 
 ## Problemas frecuentes
 
-- **Indicador rojo "N · X Issues" en desarrollo** (React 19): pulsa el indicador para ver el detalle de cada uno. Los `Dialog` y
-  `Sheet` de Radix necesitan `Title` (error) y `Description` (aviso); ya los tienen. Si reaparece "Accessing element.ref was removed
-  in React 19", viene de versiones antiguas de Radix/framer-motion/sonner en el lockfile: sube sus mínimos en `package.json` y
-  ejecuta `pnpm install`.
+- **Indicador rojo "N · X Issues" en desarrollo** (React 19): pulsa el indicador para ver el detalle de cada uno. El error
+  "Accessing element.ref was removed in React 19" (en `DropdownMenu`, `ScrollArea`, `Slot`…) viene de versiones antiguas de Radix UI
+  fijadas en `pnpm-lock.yaml`: `package.json` exige ahora `@radix-ui/*` ^1.1/^2.1 y `cmdk` ^1.1; ejecuta `pnpm install` y sube el
+  lockfile. Los `Dialog`/`Sheet` de Radix necesitan además `Title` (error) y `Description` (aviso); ya los tienen.
+- **El webhook responde 400** ("No signatures found matching the expected signature… signing secret contains whitespace"):
+  `STRIPE_WEBHOOK_SECRET` tiene un espacio o salto de línea. Debe ir en una sola línea: `STRIPE_WEBHOOK_SECRET="whsec_…"`.
+  El código limpia espacios y comillas, pero hay que reiniciar `pnpm dev` tras editar `.env.local`; `pnpm check:env` lo avisa.
 - **El pago no se inicia** ("the product tax code is missing"): las cuentas nuevas de Stripe traen *Managed Payments* activado por
   defecto, que exige un `tax_code` por producto. El checkout lo desactiva en cada sesión (`managed_payments: { enabled: false }`).
   El toast muestra el motivo real en modo prueba y `pnpm test:stripe` lo diagnostica sin la web.

@@ -22,9 +22,14 @@ const missing = required.filter((k) => !env[k])
 if (missing.length) fail("Variables de entorno", `faltan: ${missing.join(", ")}`)
 else ok("Variables de entorno", "todas definidas")
 
+// Un espacio o salto de línea dentro de un valor rompe la firma del webhook y las claves
+const spaced = required.filter((k) => env[k] && /\s/.test(env[k]))
+if (spaced.length)
+  fail("Espacios o saltos de línea", `revisa ${spaced.join(", ")} en .env.local: el valor debe ir en una sola línea, sin espacios`)
+
 // 2) Stripe en modo prueba
-const sk = env.STRIPE_SECRET_KEY ?? ""
-const pk = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""
+const sk = (env.STRIPE_SECRET_KEY ?? "").trim()
+const pk = (env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "").trim()
 if (sk.startsWith("sk_test_") && (!pk || pk.startsWith("pk_test_"))) ok("Stripe en MODO PRUEBA")
 else if (sk.startsWith("sk_live_") || pk.startsWith("pk_live_"))
   fail("Stripe", "hay claves LIVE: este proyecto debe estar en modo prueba")

@@ -3,7 +3,7 @@
 // Las sesiones de prueba se caducan al terminar. Uso: pnpm test:stripe
 import Stripe from "stripe"
 
-const key = process.env.STRIPE_SECRET_KEY
+const key = (process.env.STRIPE_SECRET_KEY ?? "").replace(/\s+/g, "").replace(/^["']+|["']+$/g, "")
 if (!key) {
   console.error("Falta STRIPE_SECRET_KEY en .env.local")
   process.exit(1)
