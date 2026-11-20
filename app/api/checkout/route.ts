@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server"
+import type Stripe from "stripe"
 import { z } from "zod"
 import { createClient } from "@/db/supabase/server"
 import { createAdminClient } from "@/db/supabase/admin"
 import { getStripe } from "@/lib/stripe"
 import { getPlan } from "@/lib/featured-plans"
+
+// "managed_payments" se declara aquí por si la versión del SDK aún no lo tipa
+type CheckoutParams = Stripe.Checkout.SessionCreateParams & {
+  managed_payments?: { enabled: boolean }
+}
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -71,9 +77,12 @@ export async function POST(req: Request) {
     const metadata = { productId: product.id, planId: plan.id, userId: user.id }
     const isSub = plan.kind === "subscription"
 
-    const session = await getStripe().checkout.sessions.create({
+    const params: CheckoutParams = {
       mode: isSub ? "subscription" : "payment",
       locale: "es",
+      // Stripe activa "Managed Payments" por defecto en cuentas nuevas y entonces exige un tax_code
+      // por producto ("the product tax code is missing"). Se desactiva en la sesión: checkout estándar.
+      managed_payments: { enabled: false },
       customer_email: user.email ?? undefined,
       line_items: [
         {
@@ -97,7 +106,9 @@ export async function POST(req: Request) {
         : { payment_intent_data: { metadata } }),
       success_url: `${origin}/products/${product.id}?checkout=success`,
       cancel_url: `${origin}/products/${product.id}?checkout=canceled`,
-    })
+    }
+
+    const session = await getStripe().checkout.sessions.create(params)
 
     return NextResponse.json({ url: session.url })
   } catch (error: any) {
