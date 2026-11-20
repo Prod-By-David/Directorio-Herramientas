@@ -43,6 +43,7 @@ for (const c of cases) {
     const session = await stripe.checkout.sessions.create({
       mode: c.mode,
       locale: "es",
+      managed_payments: { enabled: false }, // igual que app/api/checkout/route.ts
       customer_email: "stripe-test@example.com",
       line_items: [{
         quantity: 1,

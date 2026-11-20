@@ -76,8 +76,8 @@
 - Nuevo `pnpm test:security`: prueba la seguridad de la migración con usuarios reales temporales.
 
 ## Issues de desarrollo y pagos
-- Indicador "Issues": versiones antiguas de Radix UI, framer-motion, sonner, cmdk, react-hook-form y vaul fijadas en el lockfile (peer `react ^18`) acceden a `element.ref`, eliminado en React 19. `package.json` sube los mínimos; hay que ejecutar `pnpm install` para regenerar el lockfile.
-- `Sheet` del menú móvil y `Dialog` de cambio de contraseña: añadidos `Title`/`Description` (Radix los exige).
-- `formatDate` usa UTC: sin desajustes de hidratación entre servidor y navegador.
+- Pago que no se iniciaba: Stripe tiene *Managed Payments* activado por defecto en la cuenta y exigía `tax_code` ("the product tax code is missing"). El checkout y `pnpm test:stripe` pasan `managed_payments: { enabled: false }`. Si más adelante se quiere Managed Payments, habrá que asignar un `tax_code` a cada producto.
+- Indicador "Issues": `Sheet` del menú móvil y `Dialog` de cambio de contraseña con `Title`/`Description`; `formatDate` en UTC (sin desajustes de hidratación). Tras ello el indicador desapareció en Codespaces.
 - Checkout: origen tolerante a cabeceras `x-forwarded-*` en lista, `locale: "es"`, y en modo prueba el error real de Stripe llega al toast y a la terminal.
 - Nuevo `pnpm test:stripe` (clave, cuenta y sesiones de pago de prueba, sin servidor).
+- Dependencias (Radix, framer-motion…): sin cambios; solo habría que subirlas si reaparecen avisos de `element.ref`.

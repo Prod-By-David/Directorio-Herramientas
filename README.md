@@ -68,11 +68,13 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 
 ## Problemas frecuentes
 
-- **Indicador rojo "N · X Issues" en desarrollo** (React 19): pulsa el indicador para ver el detalle. La causa típica era
-  "Accessing element.ref was removed in React 19", por librerías antiguas fijadas en `pnpm-lock.yaml` (Radix UI, framer-motion,
-  sonner, cmdk…). `package.json` exige ahora versiones compatibles: ejecuta `pnpm install` y sube el lockfile actualizado.
-  Los `Dialog`/`Sheet` de Radix necesitan `Title` (error) y `Description` (aviso).
-- **El pago no se inicia**: el toast muestra el motivo en modo prueba; `pnpm test:stripe` lo diagnostica sin la web.
+- **Indicador rojo "N · X Issues" en desarrollo** (React 19): pulsa el indicador para ver el detalle de cada uno. Los `Dialog` y
+  `Sheet` de Radix necesitan `Title` (error) y `Description` (aviso); ya los tienen. Si reaparece "Accessing element.ref was removed
+  in React 19", viene de versiones antiguas de Radix/framer-motion/sonner en el lockfile: sube sus mínimos en `package.json` y
+  ejecuta `pnpm install`.
+- **El pago no se inicia** ("the product tax code is missing"): las cuentas nuevas de Stripe traen *Managed Payments* activado por
+  defecto, que exige un `tax_code` por producto. El checkout lo desactiva en cada sesión (`managed_payments: { enabled: false }`).
+  El toast muestra el motivo real en modo prueba y `pnpm test:stripe` lo diagnostica sin la web.
 
 - **"Your project's URL and Key are required to create a Supabase client"** (o pantalla "Falta configurar el
   entorno"): falta `.env.local` o las variables `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
