@@ -34,11 +34,15 @@ export const ProductDetails = ({
   canManageFeatured,
   trialAvailable,
   checkoutStatus,
+  viewer,
+  viewerEmail,
 }: {
   product: Product
   canManageFeatured: boolean
   trialAvailable: boolean
   checkoutStatus: "success" | "canceled" | null
+  viewer: "anon" | "owner" | "other"
+  viewerEmail: string | null
 }) => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   const [isTrialPending, startTrial] = useTransition()
@@ -194,11 +198,39 @@ export const ProductDetails = ({
                 </p>
               )}
 
+              {/* Sin controles de pago: se explica el motivo (sesión, otra cuenta...) */}
+              {!canManageFeatured && product.approved && (
+                <div className="space-y-2 rounded-3xl border border-black/10 dark:border-white/10 p-4 text-sm">
+                  <p className="font-bold">¿Quieres destacar esta herramienta?</p>
+                  {viewer === "anon" ? (
+                    <p className="text-muted-foreground">
+                      Solo su propietario puede destacarla. Si eres tú,{" "}
+                      <Link href="/login" className="underline">
+                        inicia sesión
+                      </Link>{" "}
+                      con la cuenta con la que la enviaste.
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      Has iniciado sesión como <strong>{viewerEmail}</strong>, que
+                      no es la cuenta que envió esta herramienta. Solo su
+                      propietario puede destacarla: cierra sesión e inicia con la
+                      cuenta correcta.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {canManageFeatured && (
                 <div className="space-y-3 rounded-3xl border border-black/10 dark:border-white/10 p-4">
                   <p className="font-bold text-lg">
                     {featuredActive ? "Ampliar destacado" : "Destacar herramienta"}
                   </p>
+                  {viewerEmail && (
+                    <p className="text-xs text-muted-foreground">
+                      Sesión iniciada como {viewerEmail}
+                    </p>
+                  )}
                   {testMode && (
                     <p className="text-xs text-muted-foreground">
                       Modo prueba: usa la tarjeta 4242 4242 4242 4242, cualquier

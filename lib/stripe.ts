@@ -10,10 +10,18 @@ export function isLiveAllowed() {
   return process.env.ALLOW_LIVE_PAYMENTS === "true"
 }
 
+/**
+ * Las claves y secretos de Stripe nunca contienen espacios: se quitan los espacios, saltos de línea y
+ * comillas sobrantes (frecuentes al copiar y pegar en .env.local o en Codespaces secrets).
+ */
+export function cleanEnvValue(value?: string): string {
+  return (value ?? "").replace(/\s+/g, "").replace(/^["']+|["']+$/g, "")
+}
+
 let cached: Stripe | null = null
 
 export function getStripe(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY
+  const key = cleanEnvValue(process.env.STRIPE_SECRET_KEY)
   if (!key) throw new Error("STRIPE_SECRET_KEY no está definida")
   const isLiveKey = key.startsWith("sk_live_") || key.startsWith("rk_live_")
   if (isLiveKey && !isLiveAllowed()) {

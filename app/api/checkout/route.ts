@@ -3,7 +3,7 @@ import type Stripe from "stripe"
 import { z } from "zod"
 import { createClient } from "@/db/supabase/server"
 import { createAdminClient } from "@/db/supabase/admin"
-import { getStripe } from "@/lib/stripe"
+import { cleanEnvValue, getStripe } from "@/lib/stripe"
 import { getPlan } from "@/lib/featured-plans"
 
 // "managed_payments" se declara aquí por si la versión del SDK aún no lo tipa
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
       message: error?.message,
     })
     // En modo prueba se devuelve el motivo real para poder corregirlo; en modo real, solo un mensaje genérico.
-    const testMode = (process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_test_")
+    const testMode = cleanEnvValue(process.env.STRIPE_SECRET_KEY).startsWith("sk_test_")
     return NextResponse.json(
       {
         error: "No se pudo iniciar el pago",

@@ -29,6 +29,13 @@ const ProductIdPage = async ({
     ? await getOwnerState(product.id, user.id)
     : { isOwner: false, trialUsed: false }
 
+  // Quién mira la ficha: sirve para explicar por qué se ven (o no) los controles de destacado
+  const viewer: "anon" | "owner" | "other" = !user
+    ? "anon"
+    : owner.isOwner
+      ? "owner"
+      : "other"
+
   const canManageFeatured = owner.isOwner && product.approved
   const trialAvailable =
     canManageFeatured && !owner.trialUsed && !isFeaturedActive(product)
@@ -41,6 +48,8 @@ const ProductIdPage = async ({
             product={product}
             canManageFeatured={canManageFeatured}
             trialAvailable={trialAvailable}
+            viewer={viewer}
+            viewerEmail={user?.email ?? null}
             checkoutStatus={
               checkout === "success" || checkout === "canceled" ? checkout : null
             }

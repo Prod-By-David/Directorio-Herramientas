@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type Stripe from "stripe"
 import { createAdminClient } from "@/db/supabase/admin"
-import { getStripe, isLiveAllowed } from "@/lib/stripe"
+import { cleanEnvValue, getStripe, isLiveAllowed } from "@/lib/stripe"
 import { getPlan } from "@/lib/featured-plans"
 
 export const runtime = "nodejs"
@@ -15,7 +15,7 @@ type Db = ReturnType<typeof createAdminClient>
 
 export async function POST(req: Request) {
   const signature = req.headers.get("stripe-signature")
-  const secret = process.env.STRIPE_WEBHOOK_SECRET
+  const secret = cleanEnvValue(process.env.STRIPE_WEBHOOK_SECRET)
   if (!secret || !signature) {
     return NextResponse.json({ error: "Webhook no configurado" }, { status: 400 })
   }
