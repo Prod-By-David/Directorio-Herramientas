@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createAdminClient } from "@/db/supabase/admin"
 import { formatDate, isFeaturedActive } from "@/lib/featured"
 import { requireAdmin } from "@/lib/admin"
+import { getStripe } from "@/lib/stripe"
 
 export const dynamic = "force-dynamic"
 
@@ -36,15 +37,49 @@ function refresh() {
   revalidatePath("/products")
 }
 
+type AdminDb = ReturnType<typeof createAdminClient>
+
+// Si la herramienta tiene una suscripción de Stripe se cancela ANTES de tocar la base de datos.
+// Si no, el cliente seguiría pagando cada mes y la renovación volvería a destacarla.
+// (No se reembolsa nada: los reembolsos se gestionan a mano en Stripe.)
+async function cancelSubscriptionIfAny(db: AdminDb, id: string): Promise<boolean> {
+  const { data, error } = await db
+    .from("products")
+    .select("stripe_subscription_id")
+    .eq("id", id)
+    .maybeSingle()
+  if (error) throw new Error(`No se pudo leer la suscripción: ${error.message}`)
+
+  const subId = data?.stripe_subscription_id
+  if (!subId) return false
+  try {
+    await getStripe().subscriptions.cancel(subId)
+  } catch (e: any) {
+    // "resource_missing": la suscripción ya no existe en Stripe (p. ej. cancelada desde su panel)
+    if (e?.code !== "resource_missing") {
+      throw new Error(`No se pudo cancelar la suscripción en Stripe: ${e?.message ?? e}`)
+    }
+  }
+  return true
+}
+
 // Todas las acciones comprueban admin en el SERVIDOR (no basta con ocultar botones)
-async function runUpdate(formData: FormData, values: Record<string, unknown>) {
+async function runUpdate(
+  formData: FormData,
+  values: Record<string, unknown>,
+  opts?: { cancelSubscription?: boolean }
+) {
   await requireAdmin()
   const id = String(formData.get("id") ?? "")
   if (!UUID_RE.test(id)) throw new Error("Id no válido")
-  const { error } = await createAdminClient()
-    .from("products")
-    .update(values)
-    .eq("id", id)
+  const db = createAdminClient()
+
+  let finalValues = values
+  if (opts?.cancelSubscription && (await cancelSubscriptionIfAny(db, id))) {
+    finalValues = { ...values, stripe_subscription_id: null }
+  }
+
+  const { error } = await db.from("products").update(finalValues).eq("id", id)
   if (error) throw new Error(`No se pudo actualizar: ${error.message}`)
   refresh()
 }
@@ -62,18 +97,26 @@ async function approveTool(formData: FormData) {
 async function rejectTool(formData: FormData) {
   "use server"
   const reason = String(formData.get("reason") ?? "").trim().slice(0, 300)
-  await runUpdate(formData, {
-    approved: false,
-    featured: false,
-    featured_until: null,
-    rejected_at: new Date().toISOString(),
-    rejection_reason: reason || null,
-  })
+  await runUpdate(
+    formData,
+    {
+      approved: false,
+      featured: false,
+      featured_until: null,
+      rejected_at: new Date().toISOString(),
+      rejection_reason: reason || null,
+    },
+    { cancelSubscription: true }
+  )
 }
 
 async function unfeatureTool(formData: FormData) {
   "use server"
-  await runUpdate(formData, { featured: false, featured_until: null })
+  await runUpdate(
+    formData,
+    { featured: false, featured_until: null },
+    { cancelSubscription: true }
+  )
 }
 
 function Row({
@@ -183,7 +226,9 @@ export default async function AdminDashboard() {
               <form action={unfeatureTool}>
                 <input type="hidden" name="id" value={product.id} />
                 <button type="submit" className={`${btn} bg-neutral-700 hover:bg-neutral-800`}>
-                  Quitar destacado
+                  {product.stripe_subscription_id
+                    ? "Quitar y cancelar suscripción"
+                    : "Quitar destacado"}
                 </button>
               </form>
             </Row>

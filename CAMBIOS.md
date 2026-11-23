@@ -91,3 +91,10 @@
 ## Webhook 400 y Issues de Radix
 - Webhook: `STRIPE_WEBHOOK_SECRET` (y las claves de Stripe) se limpian de espacios, saltos de línea y comillas; `pnpm check:env` avisa si un valor contiene espacios.
 - Issues "element.ref": `package.json` sube `@radix-ui/*` y `cmdk` (versiones compatibles con React 19). Requiere `pnpm install`.
+
+## Codespace nuevo y Stripe CLI
+- `.devcontainer/install-stripe-cli.sh` + `postCreateCommand`: la Stripe CLI se instala sola al crear el Codespace.
+- `pnpm stripe:listen`: reenvía los webhooks sin `stripe login` (usa `STRIPE_SECRET_KEY`), con los 4 eventos del webhook, y sincroniza `STRIPE_WEBHOOK_SECRET` en `.env.local`.
+
+## Cancelación desde /admin
+- "Quitar destacado" y "Rechazar" no cancelaban la suscripción de Stripe (el cliente seguía pagando y la renovación volvía a destacar la herramienta). Ahora, si hay `stripe_subscription_id`, se cancela en Stripe antes de actualizar la base de datos y se limpia el campo; el botón pasa a decir "Quitar y cancelar suscripción". Sin reembolso automático.

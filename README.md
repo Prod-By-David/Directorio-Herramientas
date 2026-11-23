@@ -67,6 +67,26 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 | `pnpm test:security` | Crea 2 usuarios temporales y comprueba la RLS real: no pueden auto-aprobarse ni auto-destacarse, no ven pendientes ajenas, el email no es legible, el contador y el storage por carpeta funcionan (lo borra todo al terminar) |
 | `pnpm test:stripe` | Sin servidor: valida la clave `sk_test_`, la cuenta de Stripe y que acepta crear sesiones de pago (pago único y suscripción). Si el pago falla en la web, el motivo real sale aquí |
 
+## Codespace nuevo: qué hay que rehacer
+
+Un Codespace nuevo es un entorno limpio (sin `.env.local`, sin sesión de Stripe, sin la CLI). Para no repetirlo:
+
+1. **Variables**: guárdalas una vez como *Codespaces secrets* (GitHub → Settings → Codespaces → Secrets, asociadas al repositorio):
+   se inyectan solas en cada Codespace nuevo. Alternativa: recrear `.env.local` a mano.
+2. **Dependencias y Stripe CLI**: `.devcontainer/devcontainer.json` ejecuta `pnpm install` e instala la Stripe CLI al crear el
+   Codespace. En uno ya creado: `bash .devcontainer/install-stripe-cli.sh`.
+3. **Webhooks**: `pnpm stripe:listen` (con `pnpm dev` en marcha). No requiere `stripe login`: usa `STRIPE_SECRET_KEY`. Si el
+   secreto de firma de la sesión no coincide con `STRIPE_WEBHOOK_SECRET`, lo actualiza en `.env.local` y te avisa de reiniciar `pnpm dev`.
+4. Reutiliza el mismo Codespace (parar/arrancar, no borrar) y evitarás todo lo anterior.
+
+## Cancelaciones y suscripciones
+
+- Si el cliente cancela en Stripe (o falla el cobro), llega `customer.subscription.deleted` y la app retira el destacado.
+- Si el admin pulsa **"Quitar y cancelar suscripción"** (o rechaza la herramienta), la app cancela la suscripción en Stripe y limpia
+  la base de datos. No se reembolsa nada automáticamente. Los totales históricos del panel de Stripe no bajan al cancelar:
+  cancelar solo evita cobros futuros.
+- Para ver el estado real en Stripe: `stripe subscriptions list --status all --limit 5` (sin `--status all` solo salen las activas).
+
 ## Problemas frecuentes
 
 - **Indicador rojo "N · X Issues" en desarrollo** (React 19): pulsa el indicador para ver el detalle de cada uno. El error
