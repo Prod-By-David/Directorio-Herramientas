@@ -98,3 +98,7 @@
 
 ## Cancelación desde /admin
 - "Quitar destacado" y "Rechazar" no cancelaban la suscripción de Stripe (el cliente seguía pagando y la renovación volvía a destacar la herramienta). Ahora, si hay `stripe_subscription_id`, se cancela en Stripe antes de actualizar la base de datos y se limpia el campo; el botón pasa a decir "Quitar y cancelar suscripción". Sin reembolso automático.
+## Suscripciones: duración y cancelación por el propietario
+- Stripe: la sesión de pago incluye descripción del producto, texto junto al botón de pago, `description` del pago/suscripción y metadatos con la duración (o la renovación mensual): ya aparecen en la pasarela, el panel y los recibos.
+- Ficha: "Destacada hasta … (quedan N días)" y, para el propietario con suscripción, el cuadro "Tu suscripción" (importe, estado, próxima renovación) con "Cancelar al final del periodo", "Cancelar ahora" y "Reanudar" (`app/actions/subscription.ts`, `lib/subscription.ts`). Con suscripción activa se oculta el plan de suscripción.
+- `daysLeft` (con test), `pnpm stripe:listen` (sin `stripe login`; crea `.env.local` si no existe) y `devcontainer` que instala la Stripe CLI para un Codespace nuevo.

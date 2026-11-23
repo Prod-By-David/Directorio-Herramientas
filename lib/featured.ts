@@ -31,6 +31,13 @@ export function sortByRanking<T extends FeaturedFields & { created_at: string }>
   })
 }
 
+/** Días enteros que quedan hasta `iso` (redondeando hacia arriba); 0 si ya pasó. */
+export function daysLeft(iso: string | null | undefined, now: number = Date.now()) {
+  if (!iso) return 0
+  const ms = new Date(iso).getTime() - now
+  return ms > 0 ? Math.ceil(ms / 86_400_000) : 0
+}
+
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", {
     timeZone: "UTC", // mismo resultado en servidor y navegador (evita desajustes de hidratación)

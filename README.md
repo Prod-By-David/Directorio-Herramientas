@@ -39,7 +39,8 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
    stripe listen --events checkout.session.completed,checkout.session.async_payment_succeeded,invoice.paid,customer.subscription.deleted \
      --forward-to localhost:3000/api/webhooks/stripe
    ```
-   y copia el `whsec_…` que imprime a `STRIPE_WEBHOOK_SECRET`.
+   y copia el `whsec_…` que imprime a `STRIPE_WEBHOOK_SECRET`. (Más cómodo: `pnpm stripe:listen`, que no requiere `stripe login` y
+   actualiza `.env.local` por ti.)
 3. (Opcional) `supabase/seed.sql` carga 6 herramientas de demostración (requiere haberte registrado antes).
 4. `ADMIN_EMAILS="tu@email.com"` (el email debe estar confirmado en Supabase) y un `CRON_SECRET` largo.
 5. `pnpm dev` y abre http://localhost:3000.
@@ -67,25 +68,37 @@ pnpm test               # tests unitarios (ranking de destacados y planes de pre
 | `pnpm test:security` | Crea 2 usuarios temporales y comprueba la RLS real: no pueden auto-aprobarse ni auto-destacarse, no ven pendientes ajenas, el email no es legible, el contador y el storage por carpeta funcionan (lo borra todo al terminar) |
 | `pnpm test:stripe` | Sin servidor: valida la clave `sk_test_`, la cuenta de Stripe y que acepta crear sesiones de pago (pago único y suscripción). Si el pago falla en la web, el motivo real sale aquí |
 
-## Codespace nuevo: qué hay que rehacer
+## Suscripciones: duración, renovación y cancelación
 
-Un Codespace nuevo es un entorno limpio (sin `.env.local`, sin sesión de Stripe, sin la CLI). Para no repetirlo:
-
-1. **Variables**: guárdalas una vez como *Codespaces secrets* (GitHub → Settings → Codespaces → Secrets, asociadas al repositorio):
-   se inyectan solas en cada Codespace nuevo. Alternativa: recrear `.env.local` a mano.
-2. **Dependencias y Stripe CLI**: `.devcontainer/devcontainer.json` ejecuta `pnpm install` e instala la Stripe CLI al crear el
-   Codespace. En uno ya creado: `bash .devcontainer/install-stripe-cli.sh`.
-3. **Webhooks**: `pnpm stripe:listen` (con `pnpm dev` en marcha). No requiere `stripe login`: usa `STRIPE_SECRET_KEY`. Si el
-   secreto de firma de la sesión no coincide con `STRIPE_WEBHOOK_SECRET`, lo actualiza en `.env.local` y te avisa de reiniciar `pnpm dev`.
-4. Reutiliza el mismo Codespace (parar/arrancar, no borrar) y evitarás todo lo anterior.
-
-## Cancelaciones y suscripciones
-
-- Si el cliente cancela en Stripe (o falla el cobro), llega `customer.subscription.deleted` y la app retira el destacado.
+- En la pasarela de Stripe, en los pagos, en las suscripciones y en los recibos aparece la duración o la renovación
+  (descripción del producto, texto del botón de pago, `description` y metadatos `planLabel`, `durationDays`/`renewal`).
+- En la ficha, el **propietario** ve "Destacada hasta … (quedan N días)" y, si tiene suscripción, el cuadro **"Tu suscripción"**:
+  importe, estado (Activa / Cancelación programada), próxima renovación y botones:
+  - **Cancelar al final del periodo**: no se renueva y sigue destacada hasta la fecha ya pagada; al terminar, Stripe envía
+    `customer.subscription.deleted` y el webhook retira el destacado.
+  - **Cancelar ahora (sin reembolso)**: cancela en Stripe y retira el destacado en el acto.
+  - **Reanudar suscripción**: deshace una cancelación programada.
+- Si el cliente cancela desde Stripe (o falla el cobro), llega `customer.subscription.deleted` y la app retira el destacado.
 - Si el admin pulsa **"Quitar y cancelar suscripción"** (o rechaza la herramienta), la app cancela la suscripción en Stripe y limpia
   la base de datos. No se reembolsa nada automáticamente. Los totales históricos del panel de Stripe no bajan al cancelar:
   cancelar solo evita cobros futuros.
-- Para ver el estado real en Stripe: `stripe subscriptions list --status all --limit 5` (sin `--status all` solo salen las activas).
+- Estado real en Stripe: `stripe subscriptions list --status all --limit 5` (sin `--status all` solo salen las activas).
+
+## Codespace nuevo (desde cero)
+
+Supabase y Stripe **no se tocan**: las migraciones, los usuarios y las herramientas viven en la nube.
+
+1. **Antes de crearlo**, en GitHub → Settings → Codespaces → *New secret* (acceso: este repositorio) crea estos secrets
+   (el `devcontainer` los sugiere): `NEXT_PUBLIC_SUPABASE_URL` (`https://<id>.supabase.co`), `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY` (`sk_test_…`), `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`pk_test_…`),
+   `ADMIN_EMAILS`, `CRON_SECRET`. **No** crees `STRIPE_WEBHOOK_SECRET` como secret: lo gestiona `pnpm stripe:listen`.
+2. Crea el Codespace desde el repositorio (rama `main`). Al terminar, `postCreateCommand` ejecuta `pnpm install` e instala la Stripe CLI.
+3. Terminal 1: `pnpm stripe:listen`. Sin `stripe login`: usa `STRIPE_SECRET_KEY`. Crea o actualiza `.env.local` con el
+   `STRIPE_WEBHOOK_SECRET` y se queda reenviando eventos. Déjala abierta.
+4. Terminal 2: `pnpm check:env` (todo en OK) y `pnpm dev`.
+5. Abre el puerto 3000 (pestaña **Puertos**) y entra en `/login` con tu cuenta: la sesión no se hereda entre Codespaces
+   (cada uno tiene su propia URL). Si en Supabase tienes *Confirm email* activado, añade la URL nueva en Authentication → URL Configuration.
+6. Comprobaciones opcionales: `pnpm verify`, `pnpm test:webhook`, `pnpm test:security`, `pnpm test:stripe`.
 
 ## Problemas frecuentes
 

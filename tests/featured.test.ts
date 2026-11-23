@@ -1,7 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 
-import { isFeaturedActive, sortByRanking } from "../lib/featured.ts"
+import { daysLeft, isFeaturedActive, sortByRanking } from "../lib/featured.ts"
 
 const NOW = Date.parse("2026-11-16T12:00:00Z")
 const day = 86_400_000
@@ -44,4 +44,13 @@ test("sortByRanking no modifica el array original", () => {
   const copy = [...items]
   sortByRanking(items)
   assert.deepEqual(items, copy)
+})
+
+test("daysLeft: días enteros hacia arriba, 0 si ya caducó o no hay fecha", () => {
+  assert.equal(daysLeft(iso(NOW + 14 * day), NOW), 14)
+  assert.equal(daysLeft(iso(NOW + 14 * day - 1000), NOW), 14) // quedan 13 días y 23 h 59 min
+  assert.equal(daysLeft(iso(NOW + 1000), NOW), 1)
+  assert.equal(daysLeft(iso(NOW - 1000), NOW), 0)
+  assert.equal(daysLeft(null, NOW), 0)
+  assert.equal(daysLeft(undefined, NOW), 0)
 })

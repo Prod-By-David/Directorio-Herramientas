@@ -18,7 +18,8 @@
     "test:webhook": "node --env-file-if-exists=.env.local scripts/test-webhook.mjs",
     "check:env": "node --env-file-if-exists=.env.local scripts/doctor.mjs",
     "test:security": "node --env-file-if-exists=.env.local scripts/test-security.mjs",
-    "test:stripe": "node --env-file-if-exists=.env.local scripts/test-stripe.mjs"
+    "test:stripe": "node --env-file-if-exists=.env.local scripts/test-stripe.mjs",
+    "stripe:listen": "node --env-file-if-exists=.env.local scripts/stripe-listen.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.18",
