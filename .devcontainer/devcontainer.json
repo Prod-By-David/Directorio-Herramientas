@@ -1,24 +1,48 @@
 {
   "name": "Directorio de Herramientas (modo prueba)",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
-  "postCreateCommand": "npm install -g pnpm@10 && pnpm install",
-  "forwardPorts": [3000],
+  "postCreateCommand": "npm install -g pnpm@10 && pnpm install && (bash .devcontainer/install-stripe-cli.sh || echo 'Aviso: no se pudo instalar la Stripe CLI; ejecuta bash .devcontainer/install-stripe-cli.sh')",
+  "forwardPorts": [
+    3000
+  ],
   "portsAttributes": {
-    "3000": { "label": "Next.js", "onAutoForward": "notify" }
+    "3000": {
+      "label": "Next.js",
+      "onAutoForward": "notify"
+    }
   },
   "customizations": {
     "vscode": {
-      "extensions": ["bradlc.vscode-tailwindcss", "esbenp.prettier-vscode"]
+      "extensions": [
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode"
+      ]
     }
   },
   "secrets": {
-    "NEXT_PUBLIC_SUPABASE_URL": { "description": "Supabase > Project Settings > API > Project URL (proyecto de pruebas)" },
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": { "description": "Supabase > Project Settings > API > anon public key" },
-    "SUPABASE_SERVICE_ROLE_KEY": { "description": "Supabase > Project Settings > API > service_role key (secreta)" },
-    "STRIPE_SECRET_KEY": { "description": "Clave secreta de Stripe en MODO TEST (sk_test_...)" },
-    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": { "description": "Clave publicable de Stripe en MODO TEST (pk_test_...)" },
-    "STRIPE_WEBHOOK_SECRET": { "description": "whsec_... (de 'stripe listen' o del endpoint de test)" },
-    "ADMIN_EMAILS": { "description": "Emails con acceso a /admin, separados por comas" },
-    "CRON_SECRET": { "description": "Secreto largo y aleatorio para /api/cron/expire-featured" }
+    "NEXT_PUBLIC_SUPABASE_URL": {
+      "description": "Supabase > Project Settings > API > Project URL (proyecto de pruebas)"
+    },
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": {
+      "description": "Supabase > Project Settings > API > anon public key"
+    },
+    "SUPABASE_SERVICE_ROLE_KEY": {
+      "description": "Supabase > Project Settings > API > service_role key (secreta)"
+    },
+    "STRIPE_SECRET_KEY": {
+      "description": "Clave secreta de Stripe en MODO TEST (sk_test_...)"
+    },
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": {
+      "description": "Clave publicable de Stripe en MODO TEST (pk_test_...)"
+    },
+    "STRIPE_WEBHOOK_SECRET": {
+      "description": "whsec_... (de 'stripe listen' o del endpoint de test)"
+    },
+    "ADMIN_EMAILS": {
+      "description": "Emails con acceso a /admin, separados por comas"
+    },
+    "CRON_SECRET": {
+      "description": "Secreto largo y aleatorio para /api/cron/expire-featured"
+    }
   }
 }
