@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { createClient } from "@/db/supabase/server"
-import { isFeaturedActive } from "@/lib/featured"
+import { daysLeft, isFeaturedActive } from "@/lib/featured"
+import { getSubscriptionSummary } from "@/lib/subscription"
 
 import { FadeIn } from "@/components/cult/fade-in"
 import { getOwnerState, getProductById } from "@/app/actions/product"
@@ -27,7 +28,7 @@ const ProductIdPage = async ({
   } = await supabase.auth.getUser()
   const owner = user
     ? await getOwnerState(product.id, user.id)
-    : { isOwner: false, trialUsed: false }
+    : { isOwner: false, trialUsed: false, stripeSubscriptionId: null }
 
   // Quién mira la ficha: sirve para explicar por qué se ven (o no) los controles de destacado
   const viewer: "anon" | "owner" | "other" = !user
@@ -40,6 +41,12 @@ const ProductIdPage = async ({
   const trialAvailable =
     canManageFeatured && !owner.trialUsed && !isFeaturedActive(product)
 
+  // Estado real de la suscripción en Stripe (solo se consulta para el propietario)
+  const subscription =
+    owner.isOwner && owner.stripeSubscriptionId
+      ? await getSubscriptionSummary(owner.stripeSubscriptionId)
+      : null
+
   return (
     <div className="z-10">
       <div className=" py-4 w-full relative  mx-auto max-w-6xl">
@@ -50,6 +57,8 @@ const ProductIdPage = async ({
             trialAvailable={trialAvailable}
             viewer={viewer}
             viewerEmail={user?.email ?? null}
+            subscription={subscription}
+            featuredDaysLeft={daysLeft(product.featured_until)}
             checkoutStatus={
               checkout === "success" || checkout === "canceled" ? checkout : null
             }

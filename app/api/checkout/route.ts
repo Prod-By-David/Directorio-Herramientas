@@ -4,7 +4,7 @@ import { z } from "zod"
 import { createClient } from "@/db/supabase/server"
 import { createAdminClient } from "@/db/supabase/admin"
 import { cleanEnvValue, getStripe } from "@/lib/stripe"
-import { getPlan } from "@/lib/featured-plans"
+import { formatPrice, getPlan } from "@/lib/featured-plans"
 
 // "managed_payments" se declara aquí por si la versión del SDK aún no lo tipa
 type CheckoutParams = Stripe.Checkout.SessionCreateParams & {
@@ -74,8 +74,23 @@ export async function POST(req: Request) {
     }
 
     const origin = getOrigin(req)
-    const metadata = { productId: product.id, planId: plan.id, userId: user.id }
     const isSub = plan.kind === "subscription"
+    // planId/productId/userId los lee el webhook; el resto es información para el panel de Stripe
+    const metadata = {
+      productId: product.id,
+      planId: plan.id,
+      userId: user.id,
+      planLabel: plan.label,
+      ...(isSub ? { renewal: "monthly" } : { durationDays: String(plan.days ?? "") }),
+    }
+
+    // Duración / renovación visibles en la pasarela, en los pagos, en las suscripciones y en los recibos
+    const durationText = isSub
+      ? `Suscripción mensual de ${formatPrice(plan.amountCents)}/mes: se renueva cada mes hasta que la canceles. Puedes cancelarla en cualquier momento desde la ficha de tu herramienta.`
+      : `Destacado durante ${plan.days} días desde el pago (pago único, sin renovación). Si tu herramienta ya está destacada, los días se suman.`
+    const paymentDescription = isSub
+      ? `Destacado «${product.codename}» · suscripción mensual`
+      : `Destacado «${product.codename}» · ${plan.days} días`
 
     const params: CheckoutParams = {
       mode: isSub ? "subscription" : "payment",
@@ -92,6 +107,7 @@ export async function POST(req: Request) {
             unit_amount: plan.amountCents,
             product_data: {
               name: `Destacar «${product.codename}» · ${plan.label}`,
+              description: durationText,
             },
             ...(isSub
               ? { recurring: { interval: plan.interval ?? ("month" as const) } }
@@ -99,11 +115,12 @@ export async function POST(req: Request) {
           },
         },
       ],
+      custom_text: { submit: { message: durationText } },
       client_reference_id: product.id,
       metadata,
       ...(isSub
-        ? { subscription_data: { metadata } }
-        : { payment_intent_data: { metadata } }),
+        ? { subscription_data: { metadata, description: paymentDescription } }
+        : { payment_intent_data: { metadata, description: paymentDescription } }),
       success_url: `${origin}/products/${product.id}?checkout=success`,
       cancel_url: `${origin}/products/${product.id}?checkout=canceled`,
     }

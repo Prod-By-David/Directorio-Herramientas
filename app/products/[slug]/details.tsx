@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   ArrowLeft,
   Blocks,
@@ -25,8 +26,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { CardDescription, CardTitle } from "@/components/ui/card"
 import { startFeaturedTrial } from "@/app/actions/featured"
+import {
+  cancelMySubscription,
+  resumeMySubscription,
+} from "@/app/actions/subscription"
 import { formatDate, isFeaturedActive } from "@/lib/featured"
 import { FEATURED_PLANS, TRIAL_DAYS, formatPrice } from "@/lib/featured-plans"
+import type { SubscriptionSummary } from "@/lib/subscription"
 import type { PublicProduct as Product } from "@/lib/types"
 
 export const ProductDetails = ({
@@ -36,6 +42,8 @@ export const ProductDetails = ({
   checkoutStatus,
   viewer,
   viewerEmail,
+  subscription,
+  featuredDaysLeft,
 }: {
   product: Product
   canManageFeatured: boolean
@@ -43,7 +51,11 @@ export const ProductDetails = ({
   checkoutStatus: "success" | "canceled" | null
   viewer: "anon" | "owner" | "other"
   viewerEmail: string | null
+  subscription: SubscriptionSummary | null
+  featuredDaysLeft: number
 }) => {
+  const router = useRouter()
+  const [isSubPending, startSub] = useTransition()
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   const [isTrialPending, startTrial] = useTransition()
   const featuredActive = isFeaturedActive(product)
@@ -75,6 +87,38 @@ export const ProductDetails = ({
       toast.error("Error de conexión con la pasarela de pagos")
     }
     setLoadingPlan(null)
+  }
+
+  // Suscripción activa en Stripe (no cancelada del todo)
+  const hasActiveSub = !!subscription && subscription.status !== "canceled"
+
+  const handleCancel = (mode: "period_end" | "now") => {
+    const question =
+      mode === "now"
+        ? "¿Cancelar la suscripción ahora? Se retirará el destacado inmediatamente y no hay reembolso."
+        : "¿Cancelar la renovación? Tu herramienta seguirá destacada hasta el final del periodo ya pagado."
+    if (!window.confirm(question)) return
+    startSub(async () => {
+      const res = await cancelMySubscription(product.id, mode)
+      if (res.ok) {
+        toast.success(res.message)
+        router.refresh()
+      } else {
+        toast.error(res.message)
+      }
+    })
+  }
+
+  const handleResume = () => {
+    startSub(async () => {
+      const res = await resumeMySubscription(product.id)
+      if (res.ok) {
+        toast.success(res.message)
+        router.refresh()
+      } else {
+        toast.error(res.message)
+      }
+    })
   }
 
   const handleTrial = () => {
@@ -195,6 +239,8 @@ export const ProductDetails = ({
                 <p className="flex items-center justify-center gap-2 rounded-[44px] bg-gradient-to-r from-purple-600 to-indigo-600 py-3 text-white font-semibold">
                   <Sparkles className="h-5 w-5 text-yellow-300" />
                   Destacada hasta el {formatDate(product.featured_until)}
+                  {featuredDaysLeft > 0 &&
+                    ` (quedan ${featuredDaysLeft} ${featuredDaysLeft === 1 ? "día" : "días"})`}
                 </p>
               )}
 
@@ -221,6 +267,79 @@ export const ProductDetails = ({
                 </div>
               )}
 
+              {/* Gestión de la suscripción (solo propietario): estado, renovación y cancelación */}
+              {canManageFeatured && hasActiveSub && subscription && (
+                <div className="space-y-3 rounded-3xl border border-purple-500/30 bg-purple-500/5 p-4 text-sm">
+                  <p className="font-bold text-lg">Tu suscripción</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    {subscription.amountCents !== null && (
+                      <li>
+                        Importe:{" "}
+                        <strong>
+                          {formatPrice(subscription.amountCents)}
+                          {subscription.interval === "month" ? " / mes" : ""}
+                        </strong>
+                      </li>
+                    )}
+                    <li>
+                      Estado:{" "}
+                      <strong>
+                        {subscription.cancelAtPeriodEnd
+                          ? "Cancelación programada"
+                          : subscription.status === "active"
+                            ? "Activa"
+                            : subscription.status}
+                      </strong>
+                    </li>
+                    {subscription.currentPeriodEnd && (
+                      <li>
+                        {subscription.cancelAtPeriodEnd
+                          ? "Termina el "
+                          : "Próxima renovación: "}
+                        <strong>{formatDate(subscription.currentPeriodEnd)}</strong>
+                      </li>
+                    )}
+                  </ul>
+                  {subscription.cancelAtPeriodEnd ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        No se renovará. Tu herramienta sigue destacada hasta esa
+                        fecha.
+                      </p>
+                      <Button
+                        onClick={handleResume}
+                        disabled={isSubPending}
+                        variant="outline"
+                        className="w-full rounded-[44px]"
+                      >
+                        {isSubPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Reanudar suscripción
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        onClick={() => handleCancel("period_end")}
+                        disabled={isSubPending}
+                        variant="outline"
+                        className="w-full rounded-[44px]"
+                      >
+                        {isSubPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Cancelar al final del periodo
+                      </Button>
+                      <Button
+                        onClick={() => handleCancel("now")}
+                        disabled={isSubPending}
+                        variant="ghost"
+                        className="w-full rounded-[44px] text-red-600 hover:text-red-700"
+                      >
+                        Cancelar ahora (sin reembolso)
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {canManageFeatured && (
                 <div className="space-y-3 rounded-3xl border border-black/10 dark:border-white/10 p-4">
                   <p className="font-bold text-lg">
@@ -240,7 +359,7 @@ export const ProductDetails = ({
                   {trialAvailable && (
                     <Button
                       onClick={handleTrial}
-                      disabled={isTrialPending || loadingPlan !== null}
+                      disabled={isTrialPending || isSubPending || loadingPlan !== null}
                       variant="outline"
                       size="lg"
                       className="w-full rounded-[44px]"
@@ -253,11 +372,13 @@ export const ProductDetails = ({
                       Probar {TRIAL_DAYS} días gratis
                     </Button>
                   )}
-                  {FEATURED_PLANS.map((plan) => (
+                  {FEATURED_PLANS.filter(
+                    (plan) => !(hasActiveSub && plan.kind === "subscription")
+                  ).map((plan) => (
                     <Button
                       key={plan.id}
                       onClick={() => handleCheckout(plan.id)}
-                      disabled={loadingPlan !== null || isTrialPending}
+                      disabled={loadingPlan !== null || isTrialPending || isSubPending}
                       size="lg"
                       className="w-full flex items-center justify-between py-6 text-base rounded-[44px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg"
                     >
@@ -275,6 +396,11 @@ export const ProductDetails = ({
                       </span>
                     </Button>
                   ))}
+                  <p className="text-xs text-muted-foreground">
+                    Pago único: se suman los días indicados a los que ya tengas.
+                    Suscripción: se renueva cada mes y puedes cancelarla desde
+                    esta misma página.
+                  </p>
                 </div>
               )}
             </div>

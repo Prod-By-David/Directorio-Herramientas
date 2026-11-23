@@ -81,11 +81,13 @@ export async function getOwnerState(productId: string, userId: string) {
   const admin = createAdminClient()
   const { data } = await admin
     .from("products")
-    .select("user_id, trial_used")
+    .select("user_id, trial_used, stripe_subscription_id")
     .eq("id", productId)
     .maybeSingle()
   return {
     isOwner: !!data && data.user_id === userId,
     trialUsed: !!data?.trial_used,
+    // Solo se usa para consultar a Stripe cuando quien mira es el propietario
+    stripeSubscriptionId: (data?.stripe_subscription_id as string | null) ?? null,
   }
 }
